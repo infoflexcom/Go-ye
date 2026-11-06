@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AdminModule } from './admin/admin.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthorizationModule } from './authorization/authorization.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -15,6 +16,7 @@ import { HealthModule } from './health/health.module.js';
     }),
     DatabaseModule,
     AuditModule,
+    AdminModule,
     AuthModule,
     AuthorizationModule,
     HealthModule,
