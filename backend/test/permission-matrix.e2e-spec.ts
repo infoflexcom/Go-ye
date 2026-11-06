@@ -303,6 +303,26 @@ describe('permission test matrix (HTTP + RLS)', () => {
       .get('/api/v1/admin/reports/grand-total')
       .set('Authorization', bearer('Country Lead'))
       .expect(403);
+    await request(httpServer())
+      .get('/api/v1/privacy/settings/phone-masking')
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200)
+      .expect(({ body }: { body: unknown }) => {
+        expect(body).toEqual({ maskPhoneNumbersAboveParish: false });
+      });
+    await request(httpServer())
+      .patch('/api/v1/privacy/settings/phone-masking')
+      .set('Authorization', bearer('Global Admin'))
+      .send({ maskPhoneNumbersAboveParish: true })
+      .expect(200)
+      .expect(({ body }: { body: unknown }) => {
+        expect(body).toEqual({ maskPhoneNumbersAboveParish: true });
+      });
+    await request(httpServer())
+      .patch('/api/v1/privacy/settings/phone-masking')
+      .set('Authorization', bearer('Country Lead'))
+      .send({ maskPhoneNumbersAboveParish: false })
+      .expect(403);
   });
 
   it('quarantines requests over HTTP and restricts resolution to the scoped Privacy Officer', async () => {

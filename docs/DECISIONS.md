@@ -207,3 +207,12 @@ Every read that returns detailed convert information to an actor above a Parish 
 The Admin reporting load test creates a fresh, isolated PostgreSQL hierarchy and refuses a database containing any converts. It seeds converts in bounded batches through the real `converts` table and its `convert_rollup_daily` maintenance trigger, then verifies Country totals, selected-country Region totals and the grand total before measuring the real Global Admin report service after three warm-up calls.
 
 The recorded Phase 2 run used `embedded-postgres` as a single local PostgreSQL process and one million synthetic rows. The all-country, Region, selected-country and grand-summary p95 measurements (3.50ms, 5.96ms, 3.51ms and 3.56ms respectively) meet the under-one-second target in that controlled setup. This is not a production latency commitment: managed PostgreSQL version, storage, network, connection pooling, concurrent load and proxy/TLS overhead must be measured again before declaring an operational SLO. The full method and command are retained in `docs/LOAD_TEST_RESULTS.md`.
+
+## ADR-022 — Runtime phone masking above Parish
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+`tenant_settings.mask_phone_numbers_above_parish` is a singleton database setting, defaulting to `false` as required. Only a Global Admin may change it through the authenticated privacy settings API; the change is tamper-evidently audited and takes effect on subsequent requests without a client release.
+
+When enabled, the API preserves only the final four digits (`***0044`) in phone fields returned to Global and all non-Parish hierarchy homes. The setting is applied inside the same database transaction by both standard convert serializers and Global Admin Country-to-Convert drill-down serialization; Parish-home reads remain unmasked. It does not modify encrypted data at rest, duplicate lookup hashes or consent records.

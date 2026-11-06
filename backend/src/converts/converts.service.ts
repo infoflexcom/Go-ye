@@ -12,6 +12,7 @@ import type { AuthenticatedActor } from '../authorization/authorization.types.js
 import { normalizeIdentity } from '../auth/auth.identity.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
+import { maskPhoneNumber, PrivacySettingsService } from '../privacy/privacy-settings.service.js';
 import type { AddConvertActivityDto } from './dto/add-convert-activity.dto.js';
 import type { AdvanceConvertStageDto } from './dto/advance-convert-stage.dto.js';
 import type { AssignConvertDto } from './dto/assign-convert.dto.js';
@@ -109,6 +110,7 @@ export class ConvertsService {
     private readonly encryption: FieldEncryptionService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
+    private readonly privacySettings: PrivacySettingsService,
   ) {}
 
   async create(actor: AuthenticatedActor, dto: CreateConvertDto): Promise<ConvertRecord> {
@@ -185,7 +187,10 @@ export class ConvertsService {
           metadata: { parishId: row.parish_id, automaticFromParishRegistration: true },
         });
       }
-      return this.toRecord(row);
+      return this.toRecord(
+        row,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -204,7 +209,10 @@ export class ConvertsService {
         resourceId: row.id,
         scopeUnitId: row.parish_id ?? row.registered_at_unit_id,
       });
-      return this.toRecord(row);
+      return this.toRecord(
+        row,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -230,7 +238,8 @@ export class ConvertsService {
           metadata: { candidateCount: result.rows.length },
         },
       );
-      return result.rows.map((row) => this.toRecord(row));
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
+      return result.rows.map((row) => this.toRecord(row, maskPhone));
     });
   }
 
@@ -271,7 +280,10 @@ export class ConvertsService {
         scopeUnitId: target.parish_id ?? target.registered_at_unit_id,
         metadata: { mergedDuplicateConvertId: dto.duplicateConvertId },
       });
-      return this.toRecord(target);
+      return this.toRecord(
+        target,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -296,7 +308,10 @@ export class ConvertsService {
         scopeUnitId: row.parish_id ?? row.registered_at_unit_id,
         metadata: { stage: row.stage },
       });
-      return this.toRecord(row);
+      return this.toRecord(
+        row,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -358,8 +373,9 @@ export class ConvertsService {
         scopeUnitId: actor.homeUnitId,
         metadata: { resultCount: result.rows.length },
       });
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
       return result.rows.map((row) => ({
-        ...this.toRecord(row),
+        ...this.toRecord(row, maskPhone),
         unassignedAgeDays: row.unassigned_age_days,
       }));
     });
@@ -383,7 +399,10 @@ export class ConvertsService {
         scopeUnitId: row.parish_id ?? undefined,
         metadata: { parishId: row.parish_id, automaticFromParishRegistration: false },
       });
-      return this.toRecord(row);
+      return this.toRecord(
+        row,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -439,7 +458,10 @@ export class ConvertsService {
           addressChanged: address !== undefined,
         },
       });
-      return this.toRecord(row);
+      return this.toRecord(
+        row,
+        await this.privacySettings.maskPhoneNumbersAboveParish(client, actor),
+      );
     });
   }
 
@@ -605,11 +627,12 @@ export class ConvertsService {
     };
   }
 
-  private toRecord(row: ConvertDatabaseRow): ConvertRecord {
+  private toRecord(row: ConvertDatabaseRow, maskPhone = false): ConvertRecord {
+    const phone = row.phone_encrypted ? this.encryption.decrypt(row.phone_encrypted) : undefined;
     return {
       id: row.id,
       fullName: this.encryption.decrypt(row.full_name_encrypted),
-      ...(row.phone_encrypted ? { phone: this.encryption.decrypt(row.phone_encrypted) } : {}),
+      ...(phone ? { phone: maskPhone ? maskPhoneNumber(phone) : phone } : {}),
       ...(row.address_encrypted ? { address: this.encryption.decrypt(row.address_encrypted) } : {}),
       registeredAtUnitId: row.registered_at_unit_id,
       registeredBy: row.registered_by,

@@ -6,6 +6,7 @@ import { ConvertsService } from '../src/converts/converts.service.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
 import { PrivacyRemovalService } from '../src/privacy/privacy-removal.service.js';
+import { PrivacySettingsService } from '../src/privacy/privacy-settings.service.js';
 import type { TestDatabase } from './support/embedded-postgres.js';
 import { createTestDatabase } from './support/embedded-postgres.js';
 
@@ -27,6 +28,7 @@ describe('ConvertsService', () => {
   let database: DatabaseService;
   let converts: ConvertsService;
   let privacy: PrivacyRemovalService;
+  let privacySettings: PrivacySettingsService;
   let areaActor: TestActor;
   let parishActor: TestActor;
   let privacyActor: TestActor;
@@ -44,7 +46,8 @@ describe('ConvertsService', () => {
     database = new DatabaseService(config);
     const encryption = new FieldEncryptionService(config);
     const audit = new AuditService();
-    converts = new ConvertsService(database, encryption, audit, config);
+    privacySettings = new PrivacySettingsService(database, audit, config);
+    converts = new ConvertsService(database, encryption, audit, config, privacySettings);
     privacy = new PrivacyRemovalService(database, encryption, audit, config);
 
     async function unit(type: string, code: string, parentCode?: string): Promise<void> {
@@ -502,5 +505,26 @@ describe('ConvertsService', () => {
       [units.get('NG-PAR-B')!.id],
     );
     expect(afterRejection.rows[0].total).toBe(beforeRequest.rows[0].total);
+  });
+
+  it('masks phone numbers for above-Parish reads when the Global Admin switches the server setting', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Phone Mask Convert',
+      phone: '+234 803 000 0044',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    await expect(converts.get(areaActor, convert.id)).resolves.toMatchObject({
+      phone: '+2348030000044',
+    });
+    await expect(privacySettings.getPhoneMasking(globalActor)).resolves.toEqual({
+      maskPhoneNumbersAboveParish: false,
+    });
+    await expect(privacySettings.updatePhoneMasking(globalActor, true)).resolves.toEqual({
+      maskPhoneNumbersAboveParish: true,
+    });
+    await expect(converts.get(areaActor, convert.id)).resolves.toMatchObject({ phone: '***0044' });
+    await expect(converts.get(parishActor, convert.id)).resolves.toMatchObject({
+      phone: '+2348030000044',
+    });
   });
 });

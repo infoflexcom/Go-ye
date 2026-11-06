@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import type { PoolClient } from 'pg';
 import { AuditService } from '../audit/audit.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
+import { maskPhoneNumber, PrivacySettingsService } from '../privacy/privacy-settings.service.js';
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { ConvertStage } from '../converts/converts.service.js';
@@ -52,6 +53,7 @@ export class AdminReportsService {
     private readonly encryption: FieldEncryptionService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly privacySettings: PrivacySettingsService,
   ) {}
 
   async listCountries(actor: AuthenticatedActor, filter: AdminReportFilterDto) {
@@ -172,6 +174,7 @@ export class AdminReportsService {
         ],
       );
       const total = Number(count.rows[0].total);
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
       await this.audit.append(client, {
         actorUserId: actor.id,
         action: 'GLOBAL_ADMIN_CONVERT_DRILL_DOWN_READ',
@@ -191,7 +194,13 @@ export class AdminReportsService {
         items: converts.rows.map((row) => ({
           id: row.id,
           fullName: this.encryption.decrypt(row.full_name_encrypted),
-          ...(row.phone_encrypted ? { phone: this.encryption.decrypt(row.phone_encrypted) } : {}),
+          ...(row.phone_encrypted
+            ? {
+                phone: maskPhone
+                  ? maskPhoneNumber(this.encryption.decrypt(row.phone_encrypted))
+                  : this.encryption.decrypt(row.phone_encrypted),
+              }
+            : {}),
           registeredAtUnitId: row.registered_at_unit_id,
           registeredBy: row.registered_by,
           ...(row.parish_id ? { parishId: row.parish_id } : {}),

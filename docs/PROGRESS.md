@@ -5,7 +5,7 @@
 
 ## Current gate
 
-**Phase 2 — convert lifecycle and reporting: IN PROGRESS. Phase 1 remains tagged `phase-1-complete`.**
+**Phase 2 — convert lifecycle and reporting: COMPLETE (`phase-2-complete`). Phase 1 remains tagged `phase-1-complete`.**
 
 Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reporting and privacy workflows. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
 
@@ -17,7 +17,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - [x] **2.4 Stage pipeline and append-only timeline:** server-enforced New Convert → Believers’ Class → Baptismal Class → Baptised → Fully Planted transitions require parish assignment and advance one step only; encrypted activity notes/events are append-only and sequence ordered.
 - [x] **2.5 Hierarchy roll-ups and summaries:** trigger-maintained daily current-stage summaries attribute each active convert to its parish when assigned (otherwise registration unit) and every ancestor exactly once; genuine PostgreSQL seeded-data tests prove Parish through Country counts and merged-record exclusion.
 - [x] **2.6 Global Admin reporting/drill-down:** authenticated Global Admin-only country list, selected-country Region totals, country and grand totals, plus encrypted Country-to-Convert drill-down are backed by roll-up summaries or indexed hierarchy queries. Registration-date/current-stage filters and drill-down pagination are validated through genuine PostgreSQL service and authenticated HTTP tests; every drill-down is tamper-evidently audited.
-- [x] **2.7 Removal requests and above-parish read audit:** a scoped worker can submit an encrypted-reason removal request that immediately quarantines the convert from routine detail access, tasks, drill-down and roll-ups. A scoped Privacy Officer (or Global Admin acting in the privacy workflow) can reject or irreversibly anonymise it; encrypted PII/lookup data are removed, pending follow-up is cancelled and all request/resolution and above-parish detail reads are tamper-evidently audited.
+- [x] **2.7 Removal requests and above-parish read audit:** a scoped worker can submit an encrypted-reason removal request that immediately quarantines the convert from routine detail access, tasks, drill-down and roll-ups. A scoped Privacy Officer (or Global Admin acting in the privacy workflow) can reject or irreversibly anonymise it; encrypted PII/lookup data are removed, pending follow-up is cancelled and all request/resolution and above-parish detail reads are tamper-evidently audited. The Global Admin can toggle the server-enforced `mask_phone_numbers_above_parish` setting (default OFF) without an app release; it masks detail and drill-down phone fields while Parish reads remain unmasked.
 - [x] **2.8 One-million-convert load verification:** the isolated genuine PostgreSQL run seeded 1,000,000 synthetic converts in 14m 48.97s, reconciled Country/Region/grand totals, and measured 20 warm local Global Admin summary samples per operation. P95 ranged from 3.50ms to 5.96ms, below the one-second target; see `docs/LOAD_TEST_RESULTS.md`.
 
 ## Phase 1 task record
@@ -61,6 +61,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - Added a removal-request privacy workflow with database-enforced request quarantine, authorised reject/anonymise resolution, cancellation of pending follow-up, encrypted request/resolution notes and roll-up removal/reinstatement rules.
 - Added audit coverage for above-Parish detail, duplicate-candidate, timeline and Unassigned Pool reads; Privacy Officer/Global Admin resolution and above-parish reads retain no PII in audit metadata.
 - Added a guarded Admin roll-up load-test runner and completed an isolated genuine PostgreSQL one-million-convert run. All four measured Global Admin summary operations met the under-one-second P95 target; exact methodology and numbers are in `docs/LOAD_TEST_RESULTS.md`.
+- Added a database-backed `mask_phone_numbers_above_parish` tenant setting, defaulting to OFF. Global Admin can change it via the authenticated privacy settings API; serializers mask above-Parish detail and report phones at request time, with tests covering default, toggle, Parish exception and report drill-down enforcement.
 - Extended genuine PostgreSQL and authenticated HTTP coverage to prove country/Region/grand totals, merged-record exclusion, filters, pagination, Global Admin-only access and drill-down audit creation.
 - Added audited Global Admin hierarchy/user/role APIs and atomic descendant-path rebuilding moves.
 - Added guarded Nigeria/Ghana sample seed data plus validated CSV/XLSX/XLSM hierarchy import/dry-run tooling.
@@ -73,7 +74,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run backend:format:check`                               | Passed                                                                                                                                        |
 | `npm run backend:lint`                                       | Passed                                                                                                                                        |
-| `npm run backend:test`                                       | Passed — 11 files, 37 tests (including load-runner, authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL coverage) |
+| `npm run backend:test`                                       | Passed — 11 files, 38 tests (including load-runner, authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL coverage) |
 | `npm run backend:build`                                      | Passed                                                                                                                                        |
 | `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                      |
 | `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                        |
@@ -107,7 +108,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 
 - `npm audit --omit=dev --audit-level=high` passes, but reports **two moderate production advisories** through `exceljs@4.4.0` → `uuid@8.3.2` (GHSA-w5hq-g745-h8pq). `npm audit fix --force` proposes a breaking downgrade to `exceljs@3.4.0`; it was not applied blindly. Before production deployment, replace or upgrade the spreadsheet library after compatibility/security review, then rerun import tests and the audit.
 - Full development dependency audit also has tooling advisories; production runtime is gated on the production-only high/critical scan above. CI and release governance must continue to review fresh audit output.
-- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds and real convert records remain excluded from this development repository. All numbered Phase 2 tasks are implemented. The required server-enforced `mask_phone_numbers_above_parish` setting remains to be verified before creating `phase-2-complete`.
+- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds and real convert records remain excluded from this development repository. All numbered Phase 2 tasks and the server-enforced phone-masking policy are implemented and verified; Phase 2 is tagged `phase-2-complete` after the final clean validation pass.
 
 ## Known platform constraints
 

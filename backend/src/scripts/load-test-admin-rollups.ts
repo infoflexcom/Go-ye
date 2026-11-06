@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service.js';
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
+import { PrivacySettingsService } from '../privacy/privacy-settings.service.js';
 import { requiredEnvironment } from './database-script.util.js';
 
 const requiredConvertCount = 1_000_000;
@@ -102,11 +103,13 @@ export async function runAdminRollupLoadTest(
       PII_ENCRYPTION_KEY: options.piiEncryptionKey,
     });
     database = new DatabaseService(config);
+    const audit = new AuditService();
     const reports = new AdminReportsService(
       database,
       new FieldEncryptionService(config),
       config,
-      new AuditService(),
+      audit,
+      new PrivacySettingsService(database, audit, config),
     );
     const actor: AuthenticatedActor = {
       id: globalUser,

@@ -5,6 +5,7 @@ import { AuditService } from '../src/audit/audit.service.js';
 import type { AuthenticatedActor } from '../src/authorization/authorization.types.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
+import { PrivacySettingsService } from '../src/privacy/privacy-settings.service.js';
 import { RollupsService } from '../src/reports/rollups.service.js';
 import type { TestDatabase } from './support/embedded-postgres.js';
 import { createTestDatabase } from './support/embedded-postgres.js';
@@ -23,6 +24,8 @@ describe('convert hierarchy roll-ups', () => {
   let rollups: RollupsService;
   let adminReports: AdminReportsService;
   let encryption: FieldEncryptionService;
+  let privacySettings: PrivacySettingsService;
+  let parishNewId: string;
   let countryActor: AuthenticatedActor;
   let globalActor: AuthenticatedActor;
   const units = new Map<string, Unit>();
@@ -37,7 +40,9 @@ describe('convert hierarchy roll-ups', () => {
     database = new DatabaseService(config);
     encryption = new FieldEncryptionService(config);
     rollups = new RollupsService(database);
-    adminReports = new AdminReportsService(database, encryption, config, new AuditService());
+    const audit = new AuditService();
+    privacySettings = new PrivacySettingsService(database, audit, config);
+    adminReports = new AdminReportsService(database, encryption, config, audit, privacySettings);
 
     async function unit(type: string, code: string, parentCode?: string): Promise<void> {
       const result = await testDatabase.pool.query<Unit>(
@@ -102,7 +107,7 @@ describe('convert hierarchy roll-ups', () => {
       return result.rows[0].id;
     }
 
-    const parishNew = await convert('NG-PAR-A', 'NEW_CONVERT', 'NG-PAR-A');
+    parishNewId = await convert('NG-PAR-A', 'NEW_CONVERT', 'NG-PAR-A');
     await convert('NG-PAR-A', 'BAPTISED', 'NG-PAR-A');
     await convert('NG-ARE', 'NEW_CONVERT');
     await convert('NG', 'FULLY_PLANTED', 'NG-PAR-B');
@@ -110,7 +115,7 @@ describe('convert hierarchy roll-ups', () => {
     const duplicate = await convert('NG-PAR-A', 'NEW_CONVERT', 'NG-PAR-A');
     await testDatabase.pool.query(
       `UPDATE converts SET merged_into_id = $1, merged_at = now(), merged_by = $2 WHERE id = $3`,
-      [parishNew, countryUser.rows[0].id, duplicate],
+      [parishNewId, countryUser.rows[0].id, duplicate],
     );
   }, 30_000);
 
@@ -177,12 +182,28 @@ describe('convert hierarchy roll-ups', () => {
       'Global Admin access is required',
     );
 
+    await testDatabase.pool.query('UPDATE converts SET phone_encrypted = $1 WHERE id = $2', [
+      encryption.encrypt('+2348030000066'),
+      parishNewId,
+    ]);
+    const unmaskedDetail = await adminReports.drillDownCountry(
+      globalActor,
+      units.get('NG')!.id,
+      {},
+    );
+    expect(unmaskedDetail.items.find((item) => item.id === parishNewId)?.phone).toBe(
+      '+2348030000066',
+    );
+    await privacySettings.updatePhoneMasking(globalActor, true);
+    const maskedDetail = await adminReports.drillDownCountry(globalActor, units.get('NG')!.id, {});
+    expect(maskedDetail.items.find((item) => item.id === parishNewId)?.phone).toBe('***0066');
+
     const auditEvents = await testDatabase.pool.query<{ count: string }>(
       `SELECT count(*)::text AS count
        FROM audit_log
        WHERE action = 'GLOBAL_ADMIN_CONVERT_DRILL_DOWN_READ'`,
     );
-    expect(Number(auditEvents.rows[0].count)).toBe(2);
+    expect(Number(auditEvents.rows[0].count)).toBe(4);
   });
 
   it('keeps country totals isolated while allowing Global Admin to read a second country', async () => {
