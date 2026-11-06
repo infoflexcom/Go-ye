@@ -5,7 +5,7 @@
 
 ## Current gate
 
-**Phase 0 — clean project skeleton: IMPLEMENTATION COMPLETE; awaiting sponsor responses and explicit `proceed`.**
+**Phase 0 — clean project skeleton: COMPLETE; awaiting explicit `proceed`.**
 
 This phase created only the safe engineering foundation. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack.
 
@@ -17,8 +17,9 @@ This phase created only the safe engineering foundation. No real convert, church
 - [~] Flutter/Riverpod shell, Dart formatting, analysis, widget tests and Android/iOS/Windows runner bootstrap are configured. This workspace has no Flutter/Dart, Android SDK, Java or Windows toolchain, so Android-emulator and Windows launch commands could not be executed locally.
 - [~] CI workflow is committed for backend quality/tests/dependency scan, Docker Compose smoke test, Flutter checks and Android debug build; manual macOS/iOS and Windows builds are scaffolded. GitHub Actions could not be dispatched from this branch because the GitHub integration reports no available workflows and denies Actions permission (`HTTP 403 Resource not accessible by integration`).
 - [x] `ARCHITECTURE.md`, `DECISIONS.md`, `PROGRESS.md`, `DEVELOPMENT.md` and the initial logical `ERD.md` exist.
-- [x] The six required sponsor questions are dispatched together as the final Phase 0 action.
-- [x] Annotated Git tag `phase-0-complete` is created after local validation.
+- [x] The six required sponsor questions were sent together and all six responses were received.
+- [x] Sponsor confirmations recorded in `docs/DECISIONS.md` (ADR-012).
+- [x] Annotated Git tag `phase-0-complete` is created after final documentation validation.
 
 ## Completed in this increment
 
@@ -46,6 +47,15 @@ This phase created only the safe engineering foundation. No real convert, church
 | Local compiled API `GET /api/v1/health`                      | Passed — API healthy; database intentionally not configured outside Compose                                                               |
 | Supplied asset copy SHA-256 comparison                       | Passed — four source/copy pairs match                                                                                                     |
 | Docker Compose / Flutter / Android emulator / Windows launch | Not runnable in this workspace; CI configuration is present, but remote Actions dispatch is currently not authorised for this integration |
+
+## Sponsor confirmations received
+
+- **Hosting:** church-owned AWS; numerical budget ceiling was not supplied and remains a production-provisioning gate.
+- **Store accounts:** Church IT / Directorate holds Apple Developer and Google Play Console accounts.
+- **Windows signing:** church-owned OV/EV certificate is available.
+- **Hierarchy:** the authoritative list will be supplied; no canonical sample data is authorised.
+- **Journey policy:** default schedule and five stage names are confirmed.
+- **RCCG logo:** approved for the Go-Ye app icon and splash.
 
 ## Scope deferred to Phase 1
 

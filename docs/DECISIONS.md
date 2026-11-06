@@ -110,3 +110,17 @@ This Linux workspace can test shared/backend code and may produce unsigned Andro
 **Status:** Accepted
 
 Use Docker images, a managed PostgreSQL service with encrypted storage, daily backups, point-in-time recovery where offered, and a documented quarterly restore drill. Production has separate application/database roles, no public database endpoint, monitoring/alerting, migration-only schema changes and church-owned cloud/domain/accounts. A single-country pilot is isolated from production global rollout through environments, not separate forks.
+
+## ADR-012 — Phase 0 sponsor confirmations
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+The sponsor confirmed the following Phase 0 operating decisions:
+
+- Use church-owned AWS accounts for the hosting path; no numerical pilot/production budget ceiling was supplied in the response, so spend-cap-dependent production provisioning remains blocked until governance sets one.
+- Church IT / Directorate holds the Apple Developer and Google Play Console accounts. Store access and recovery details must remain church-owned.
+- A church-owned OV/EV Windows code-signing certificate is available for the eventual `GoYe-Setup.exe` release. It must be injected through CI secret storage only.
+- The authoritative country-to-parish hierarchy list will be supplied for import; sample operational hierarchy data must not be treated as canonical.
+- Confirm the initial configurable policy: call within 24 hours, prayer on Day 3, visit on Day 7, then weekly; stages are New Convert → Believers’ Class → Baptismal Class → Baptised → Parish Integration (Fully Planted).
+- Approve the supplied RCCG `logo.jpg` for the application icon and splash. INFOFLEX `logo-source.png` remains restricted to About/Built-by, installer and administrative footer contexts.
