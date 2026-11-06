@@ -200,6 +200,10 @@ export class ConvertsService {
       if (!row) {
         throw new NotFoundException('Convert not found.');
       }
+      await this.auditAboveParishRead(client, actor, 'CONVERT_READ_ABOVE_PARISH', {
+        resourceId: row.id,
+        scopeUnitId: row.parish_id ?? row.registered_at_unit_id,
+      });
       return this.toRecord(row);
     });
   }
@@ -216,6 +220,15 @@ export class ConvertsService {
          WHERE phone_lookup_hash = $1 AND merged_into_id IS NULL
          ORDER BY created_at ASC`,
         [hash],
+      );
+      await this.auditAboveParishRead(
+        client,
+        actor,
+        'CONVERT_DUPLICATE_CANDIDATES_READ_ABOVE_PARISH',
+        {
+          scopeUnitId: actor.homeUnitId,
+          metadata: { candidateCount: result.rows.length },
+        },
       );
       return result.rows.map((row) => this.toRecord(row));
     });
@@ -313,15 +326,18 @@ export class ConvertsService {
          FROM convert_timeline_events WHERE convert_id = $1 ORDER BY event_sequence ASC`,
         [id],
       );
-      if (result.rows.length === 0) {
-        const convert = await client.query<{ id: string }>(
-          'SELECT id FROM converts WHERE id = $1',
-          [id],
-        );
-        if (!convert.rows[0]) {
-          throw new NotFoundException('Convert not found.');
-        }
+      const convert = await client.query<{
+        id: string;
+        registered_at_unit_id: string;
+        parish_id: string | null;
+      }>('SELECT id, registered_at_unit_id, parish_id FROM converts WHERE id = $1', [id]);
+      if (!convert.rows[0]) {
+        throw new NotFoundException('Convert not found.');
       }
+      await this.auditAboveParishRead(client, actor, 'CONVERT_TIMELINE_READ_ABOVE_PARISH', {
+        resourceId: id,
+        scopeUnitId: convert.rows[0].parish_id ?? convert.rows[0].registered_at_unit_id,
+      });
       return result.rows.map((row) => this.toTimelineEvent(row));
     });
   }
@@ -338,6 +354,10 @@ export class ConvertsService {
          WHERE parish_id IS NULL AND merged_into_id IS NULL
          ORDER BY created_at ASC`,
       );
+      await this.auditAboveParishRead(client, actor, 'CONVERT_UNASSIGNED_POOL_READ_ABOVE_PARISH', {
+        scopeUnitId: actor.homeUnitId,
+        metadata: { resultCount: result.rows.length },
+      });
       return result.rows.map((row) => ({
         ...this.toRecord(row),
         unassignedAgeDays: row.unassigned_age_days,
@@ -468,6 +488,38 @@ export class ConvertsService {
       throw new NotFoundException('Convert not found.');
     }
     return row;
+  }
+
+  private async auditAboveParishRead(
+    client: PoolClient,
+    actor: AuthenticatedActor,
+    action: string,
+    details: {
+      resourceId?: string;
+      scopeUnitId?: string;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    if (!actor.isGlobalAdmin) {
+      if (!actor.homeUnitId) {
+        return;
+      }
+      const homeUnit = await client.query<{ type: string }>(
+        'SELECT type::text FROM org_units WHERE id = $1',
+        [actor.homeUnitId],
+      );
+      if (homeUnit.rows[0]?.type === 'PARISH') {
+        return;
+      }
+    }
+    await this.audit.append(client, {
+      actorUserId: actor.id,
+      action,
+      resourceType: 'CONVERT',
+      resourceId: details.resourceId,
+      scopeUnitId: details.scopeUnitId,
+      metadata: details.metadata,
+    });
   }
 
   private async withConvertActor<T>(

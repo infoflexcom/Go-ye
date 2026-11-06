@@ -36,6 +36,7 @@ describe('permission test matrix (HTTP + RLS)', () => {
   let app: INestApplication;
   const units = new Map<string, Unit>();
   const actors = new Map<string, ActorToken>();
+  let reportConvertId: string;
   const jwt = new JwtService();
 
   beforeAll(async () => {
@@ -104,6 +105,7 @@ describe('permission test matrix (HTTP + RLS)', () => {
     await createActor('Province Lead', 'NG-PRO', 'PROVINCE_LEADER');
     await createActor('Zone Lead', 'NG-ZON', 'ZONE_LEADER');
     await createActor('Area Lead', 'NG-ARE', 'AREA_LEADER');
+    await createActor('Privacy Officer', 'NG-ARE', 'PRIVACY_OFFICER');
     await createActor('Parish Alpha', 'NG-PAR-A', 'PARISH_PASTOR');
     await createActor('Parish Beta', 'NG-PAR-B', 'PARISH_PASTOR');
 
@@ -111,11 +113,11 @@ describe('permission test matrix (HTTP + RLS)', () => {
     if (!globalAdmin) {
       throw new Error('Global Admin test actor was not created.');
     }
-    await database.pool.query(
+    const reportConvert = await database.pool.query<{ id: string }>(
       `INSERT INTO converts (
         full_name_encrypted, registered_at_unit_id, registered_by, parish_id,
         consent_granted, consent_version, consent_method, consent_captured_by, stage
-      ) VALUES ($1, $2, $3, $4, true, '2026-11', 'DIGITAL', $3, 'NEW_CONVERT')`,
+      ) VALUES ($1, $2, $3, $4, true, '2026-11', 'DIGITAL', $3, 'NEW_CONVERT') RETURNING id`,
       [
         encryptPii('HTTP Reporting Convert'),
         units.get('NG-PAR-A')?.id,
@@ -123,6 +125,7 @@ describe('permission test matrix (HTTP + RLS)', () => {
         units.get('NG-PAR-A')?.id,
       ],
     );
+    reportConvertId = reportConvert.rows[0].id;
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -144,6 +147,17 @@ describe('permission test matrix (HTTP + RLS)', () => {
 
   function httpServer(): Server {
     return app.getHttpServer() as Server;
+  }
+
+  function removalRequestId(body: unknown): string {
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      typeof (body as { requestId?: unknown }).requestId !== 'string'
+    ) {
+      throw new Error('Removal request response has no request ID.');
+    }
+    return (body as { requestId: string }).requestId;
   }
 
   function codesFromResponse(body: unknown): string[] {
@@ -289,5 +303,44 @@ describe('permission test matrix (HTTP + RLS)', () => {
       .get('/api/v1/admin/reports/grand-total')
       .set('Authorization', bearer('Country Lead'))
       .expect(403);
+  });
+
+  it('quarantines requests over HTTP and restricts resolution to the scoped Privacy Officer', async () => {
+    const removal = await request(httpServer())
+      .post(`/api/v1/converts/${reportConvertId}/removal-requests`)
+      .set('Authorization', bearer('Parish Alpha'))
+      .send({ reason: 'The convert requested deletion.' })
+      .expect(201);
+    expect(removal.body).toEqual(expect.objectContaining({ status: 'PENDING' }));
+    const requestId = removalRequestId(removal.body as unknown);
+
+    await request(httpServer())
+      .get('/api/v1/privacy/removal-requests')
+      .set('Authorization', bearer('Country Lead'))
+      .expect(403);
+    const pending = await request(httpServer())
+      .get('/api/v1/privacy/removal-requests?status=PENDING')
+      .set('Authorization', bearer('Privacy Officer'))
+      .expect(200);
+    expect(pending.body).toEqual([
+      expect.objectContaining({
+        id: requestId,
+        convertId: reportConvertId,
+        reason: 'The convert requested deletion.',
+      }),
+    ]);
+
+    await request(httpServer())
+      .post(`/api/v1/privacy/removal-requests/${requestId}/resolve`)
+      .set('Authorization', bearer('Privacy Officer'))
+      .send({ outcome: 'ANONYMISE', note: 'Identity confirmed.' })
+      .expect(201)
+      .expect(({ body }: { body: unknown }) => {
+        expect(body).toEqual({ convertId: reportConvertId, status: 'ANONYMISED' });
+      });
+    await request(httpServer())
+      .get(`/api/v1/converts/${reportConvertId}`)
+      .set('Authorization', bearer('Global Admin'))
+      .expect(404);
   });
 });

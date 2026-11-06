@@ -5,6 +5,7 @@ import type { AuthenticatedActor } from '../src/authorization/authorization.type
 import { ConvertsService } from '../src/converts/converts.service.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
+import { PrivacyRemovalService } from '../src/privacy/privacy-removal.service.js';
 import type { TestDatabase } from './support/embedded-postgres.js';
 import { createTestDatabase } from './support/embedded-postgres.js';
 
@@ -25,8 +26,11 @@ describe('ConvertsService', () => {
   let testDatabase: TestDatabase;
   let database: DatabaseService;
   let converts: ConvertsService;
+  let privacy: PrivacyRemovalService;
   let areaActor: TestActor;
   let parishActor: TestActor;
+  let privacyActor: TestActor;
+  let globalActor: AuthenticatedActor;
   const units = new Map<string, Unit>();
 
   beforeAll(async () => {
@@ -38,12 +42,10 @@ describe('ConvertsService', () => {
       PII_LOOKUP_PEPPER: 'convert-test-lookup-pepper-which-is-at-least-thirty-two-bytes',
     });
     database = new DatabaseService(config);
-    converts = new ConvertsService(
-      database,
-      new FieldEncryptionService(config),
-      new AuditService(),
-      config,
-    );
+    const encryption = new FieldEncryptionService(config);
+    const audit = new AuditService();
+    converts = new ConvertsService(database, encryption, audit, config);
+    privacy = new PrivacyRemovalService(database, encryption, audit, config);
 
     async function unit(type: string, code: string, parentCode?: string): Promise<void> {
       const row = await testDatabase.pool.query<Unit>(
@@ -101,6 +103,27 @@ describe('ConvertsService', () => {
       'SOUL_WINNER',
       '00000000-0000-0000-0000-000000000022',
     );
+    privacyActor = await actor(
+      'Area Privacy Officer',
+      'NG-ARE',
+      'PRIVACY_OFFICER',
+      '00000000-0000-0000-0000-000000000023',
+    );
+    const globalUser = await testDatabase.pool.query<{ id: string }>(
+      `INSERT INTO users (display_name, email_normalized, status)
+       VALUES ('Global Privacy Admin', 'global.privacy.admin@convert.test', 'ACTIVE') RETURNING id`,
+    );
+    await testDatabase.pool.query(
+      `INSERT INTO user_roles (user_id, role_id, assigned_by)
+       SELECT $1, id, $1 FROM roles WHERE key = 'GLOBAL_ADMIN'`,
+      [globalUser.rows[0].id],
+    );
+    globalActor = {
+      id: globalUser.rows[0].id,
+      sessionId: '00000000-0000-0000-0000-000000000024',
+      roles: ['GLOBAL_ADMIN'],
+      isGlobalAdmin: true,
+    };
   }, 30_000);
 
   afterAll(async () => {
@@ -336,5 +359,148 @@ describe('ConvertsService', () => {
     expect(updated.address).toBe('11 Updated Street, Lagos');
     expect(updated.registeredAtUnitId).toBe(units.get('NG-ARE')?.id);
     expect(updated.consent.capturedBy).toBe(areaActor.id);
+  });
+
+  it('audits an above-parish detail read but not an equivalent Parish read', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Read Audit Convert',
+      consent: { granted: true, version: '2026-11', method: 'VERBAL' },
+    });
+    await converts.get(areaActor, convert.id);
+    await converts.get(parishActor, convert.id);
+
+    const reads = await testDatabase.pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM audit_log
+       WHERE action = 'CONVERT_READ_ABOVE_PARISH' AND resource_id = $1`,
+      [convert.id],
+    );
+    expect(reads.rows[0].count).toBe('1');
+  });
+
+  it('quarantines a removal request, permits only the Privacy Officer workflow, then erases PII by anonymisation', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Removal Request Convert',
+      phone: '+234 803 000 0033',
+      address: '33 Removal Street, Lagos',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const beforeRemoval = await testDatabase.pool.query<{ total: string }>(
+      `SELECT COALESCE(sum(total_count), 0)::text AS total
+       FROM convert_rollup_daily WHERE org_unit_id = $1`,
+      [units.get('NG-PAR-B')!.id],
+    );
+
+    const request = await privacy.requestRemoval(parishActor, convert.id, {
+      reason: 'The person withdrew consent.',
+    });
+    expect(request.status).toBe('PENDING');
+    await expect(converts.get(areaActor, convert.id)).rejects.toThrow(/not found/i);
+    await expect(converts.get(globalActor, convert.id)).rejects.toThrow(/not found/i);
+    const afterRequest = await testDatabase.pool.query<{ total: string }>(
+      `SELECT COALESCE(sum(total_count), 0)::text AS total
+       FROM convert_rollup_daily WHERE org_unit_id = $1`,
+      [units.get('NG-PAR-B')!.id],
+    );
+    expect(Number(afterRequest.rows[0].total)).toBe(Number(beforeRemoval.rows[0].total) - 1);
+
+    await expect(
+      privacy.resolve(areaActor, request.requestId, { outcome: 'ANONYMISE' }),
+    ).rejects.toThrow(/Privacy Officer/i);
+    const pendingRequest = [
+      expect.objectContaining({
+        id: request.requestId,
+        convertId: convert.id,
+        reason: 'The person withdrew consent.',
+        status: 'PENDING',
+      }),
+    ];
+    await expect(privacy.listRequests(privacyActor, { status: 'PENDING' })).resolves.toEqual(
+      pendingRequest,
+    );
+    await expect(privacy.listRequests(globalActor, { status: 'PENDING' })).resolves.toEqual(
+      pendingRequest,
+    );
+
+    await expect(
+      privacy.resolve(privacyActor, request.requestId, {
+        outcome: 'ANONYMISE',
+        note: 'Identity checked and lawful request approved.',
+      }),
+    ).resolves.toEqual({ convertId: convert.id, status: 'ANONYMISED' });
+    const stored = await testDatabase.pool.query<{
+      privacy_status: string;
+      phone_encrypted: Buffer | null;
+      address_encrypted: Buffer | null;
+      full_name_encrypted: Buffer;
+    }>(
+      `SELECT privacy_status::text, phone_encrypted, address_encrypted, full_name_encrypted
+       FROM converts WHERE id = $1`,
+      [convert.id],
+    );
+    expect(stored.rows[0].privacy_status).toBe('ANONYMISED');
+    expect(stored.rows[0].phone_encrypted).toBeNull();
+    expect(stored.rows[0].address_encrypted).toBeNull();
+    expect(stored.rows[0].full_name_encrypted.toString('utf8')).not.toContain(
+      'Removal Request Convert',
+    );
+    const pendingTasks = await testDatabase.pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count FROM follow_up_tasks
+       WHERE convert_id = $1 AND status = 'PENDING'`,
+      [convert.id],
+    );
+    expect(pendingTasks.rows[0].count).toBe('0');
+    await expect(converts.get(parishActor, convert.id)).rejects.toThrow(/not found/i);
+    await expect(privacy.listRequests(privacyActor, { status: 'ANONYMISED' })).resolves.toEqual([
+      expect.objectContaining({
+        id: request.requestId,
+        status: 'ANONYMISED',
+        resolutionNote: 'Identity checked and lawful request approved.',
+      }),
+    ]);
+
+    const privacyAudit = await testDatabase.pool.query<{ action: string }>(
+      `SELECT action FROM audit_log
+       WHERE resource_id = $1
+       ORDER BY occurred_at ASC, id ASC`,
+      [request.requestId],
+    );
+    expect(privacyAudit.rows.map((row) => row.action).sort()).toEqual([
+      'CONVERT_REMOVAL_ANONYMISED',
+      'CONVERT_REMOVAL_REQUESTED',
+    ]);
+  });
+
+  it('restores a rejected request to routine access and its prior roll-up contribution', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Rejected Removal Convert',
+      consent: { granted: true, version: '2026-11', method: 'VERBAL' },
+    });
+    const beforeRequest = await testDatabase.pool.query<{ total: string }>(
+      `SELECT COALESCE(sum(total_count), 0)::text AS total
+       FROM convert_rollup_daily WHERE org_unit_id = $1`,
+      [units.get('NG-PAR-B')!.id],
+    );
+    const request = await privacy.requestRemoval(parishActor, convert.id, {});
+    const duringRequest = await testDatabase.pool.query<{ total: string }>(
+      `SELECT COALESCE(sum(total_count), 0)::text AS total
+       FROM convert_rollup_daily WHERE org_unit_id = $1`,
+      [units.get('NG-PAR-B')!.id],
+    );
+    expect(Number(duringRequest.rows[0].total)).toBe(Number(beforeRequest.rows[0].total) - 1);
+
+    await expect(
+      privacy.resolve(privacyActor, request.requestId, {
+        outcome: 'REJECT',
+        note: 'Identity not verified.',
+      }),
+    ).resolves.toEqual({ convertId: convert.id, status: 'REJECTED' });
+    await expect(converts.get(parishActor, convert.id)).resolves.toMatchObject({ id: convert.id });
+    const afterRejection = await testDatabase.pool.query<{ total: string }>(
+      `SELECT COALESCE(sum(total_count), 0)::text AS total
+       FROM convert_rollup_daily WHERE org_unit_id = $1`,
+      [units.get('NG-PAR-B')!.id],
+    );
+    expect(afterRejection.rows[0].total).toBe(beforeRequest.rows[0].total);
   });
 });

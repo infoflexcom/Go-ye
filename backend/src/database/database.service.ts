@@ -6,6 +6,7 @@ export interface DatabaseActor {
   userId?: string;
   homePath?: string;
   isGlobalAdmin?: boolean;
+  isPrivacyOfficer?: boolean;
   isSystem?: boolean;
   auditSecret?: string;
 }
@@ -41,12 +42,14 @@ export class DatabaseService implements OnModuleDestroy {
           set_config('goye.user_id', $1, true),
           set_config('goye.home_path', $2, true),
           set_config('goye.is_global_admin', $3, true),
-          set_config('goye.is_system', $4, true),
-          set_config('goye.audit_secret', $5, true)`,
+          set_config('goye.is_privacy_officer', $4, true),
+          set_config('goye.is_system', $5, true),
+          set_config('goye.audit_secret', $6, true)`,
         [
           actor.userId ?? '',
           actor.homePath ?? '',
           String(actor.isGlobalAdmin === true),
+          String(actor.isPrivacyOfficer === true),
           String(actor.isSystem === true),
           actor.auditSecret ?? '',
         ],

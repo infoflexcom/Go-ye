@@ -142,6 +142,7 @@ export class AdminReportsService {
          JOIN org_units registration_unit ON registration_unit.id = convert.registered_at_unit_id
          WHERE registration_unit.path <@ $1::ltree
            AND convert.merged_into_id IS NULL
+           AND convert.privacy_status = 'ACTIVE'
            AND ($2::date IS NULL OR convert.created_at::date >= $2::date)
            AND ($3::date IS NULL OR convert.created_at::date <= $3::date)
            AND ($4::convert_stage IS NULL OR convert.stage = $4::convert_stage)`,
@@ -155,6 +156,7 @@ export class AdminReportsService {
          JOIN org_units registration_unit ON registration_unit.id = convert.registered_at_unit_id
          WHERE registration_unit.path <@ $1::ltree
            AND convert.merged_into_id IS NULL
+           AND convert.privacy_status = 'ACTIVE'
            AND ($2::date IS NULL OR convert.created_at::date >= $2::date)
            AND ($3::date IS NULL OR convert.created_at::date <= $3::date)
            AND ($4::convert_stage IS NULL OR convert.stage = $4::convert_stage)

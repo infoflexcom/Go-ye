@@ -187,3 +187,14 @@ A convert’s reporting attribution is its assigned Parish when assigned, otherw
 Global multi-country reporting is exposed only under authenticated `GLOBAL_ADMIN` routes and is checked again in the service before a database transaction is opened. Country, Region, country-total and grand-total endpoints read the indexed `convert_rollup_daily` current-stage summary. The grand total sums only Country rows, so a convert represented at Country and its lower ancestors cannot be double-counted. Country-to-Convert detail instead uses the selected Country's `ltree` registration scope, excludes merged source rows and is paginated.
 
 Every report accepts optional inclusive `startDate`, `endDate` and current `stage` filters. Dates retain the roll-up's established registration-day meaning; the drill-down applies the same registration-day predicate to the immutable `created_at` timestamp. Detail PII is decrypted only after the Global Admin/RLS transaction is established; totals contain no PII. Each detail request appends `GLOBAL_ADMIN_CONVERT_DRILL_DOWN_READ` to the existing tamper-evident audit chain, carrying only scope, filter, pagination and result-count metadata.
+
+## ADR-020 — Privacy removal quarantine, anonymisation and above-Parish read audit
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+A permitted scoped worker may lodge a removal request with an optional AES-GCM-encrypted reason. The controlled database operation immediately changes the convert to `REMOVAL_REQUESTED`: it is hidden from routine Global/operational reads, timelines, follow-up task reads, Country-to-Convert drill-down and current totals. A scoped `PRIVACY_OFFICER` (or Global Admin expressly using the privacy workflow) alone may resolve the request. Rejection restores routine access and its roll-up contribution; rejection/anonymisation reasons remain encrypted.
+
+The destructive resolution is an irreversible field-level anonymisation rather than physical-row deletion, because the immutable consent, timeline, follow-up and tamper-evident audit relations must remain referentially sound. It overwrites the encrypted name with a non-identifying placeholder, clears encrypted phone/address and the duplicate lookup hash, cancels pending follow-up and removes the individual from active roll-ups. No removed PII is carried in audit metadata.
+
+Every read that returns detailed convert information to an actor above a Parish home unit now appends an audit event in the same transaction: individual detail, duplicate-candidate results, timeline and Unassigned Pool reads, as well as the Global Admin drill-down. Parish-equivalent reads are not multiplied into the above-Parish audit stream.

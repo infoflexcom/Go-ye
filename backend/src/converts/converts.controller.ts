@@ -9,6 +9,8 @@ import {
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { CurrentActor } from '../authorization/current-actor.decorator.js';
 import { JwtAuthGuard } from '../authorization/jwt-auth.guard.js';
+import { PrivacyRemovalService } from '../privacy/privacy-removal.service.js';
+import { RequestConvertRemovalDto } from '../privacy/dto/request-convert-removal.dto.js';
 import { AddConvertActivityDto } from './dto/add-convert-activity.dto.js';
 import { AdvanceConvertStageDto } from './dto/advance-convert-stage.dto.js';
 import { AssignConvertDto } from './dto/assign-convert.dto.js';
@@ -23,7 +25,10 @@ import { ConvertsService } from './converts.service.js';
 @UseGuards(JwtAuthGuard)
 @Controller('converts')
 export class ConvertsController {
-  constructor(private readonly converts: ConvertsService) {}
+  constructor(
+    private readonly converts: ConvertsService,
+    private readonly privacy: PrivacyRemovalService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Register a convert with mandatory affirmative consent' })
@@ -101,6 +106,18 @@ export class ConvertsController {
     @Body() dto: AssignConvertDto,
   ) {
     return this.converts.assignToParish(actor, id, dto);
+  }
+
+  @Post(':id/removal-requests')
+  @ApiOperation({
+    summary: 'Request privacy removal; the convert is immediately hidden from routine access',
+  })
+  requestRemoval(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Body() dto: RequestConvertRemovalDto,
+  ) {
+    return this.privacy.requestRemoval(actor, id, dto);
   }
 
   @Get(':id')
