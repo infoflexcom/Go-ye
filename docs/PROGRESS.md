@@ -12,7 +12,7 @@ This phase created only the safe engineering foundation. No real convert, church
 ## Phase 1 task record
 
 - [x] **1.1 Schema and migrations:** versioned PostgreSQL migrations create the `ltree` hierarchy, users, roles, devices, sessions and append-only audit foundation. Embedded PostgreSQL integration tests verify extensions, hierarchy structure and path construction.
-- [ ] **1.2 OTP authentication, JWT, refresh and lockout**
+- [x] **1.2 OTP authentication, JWT, refresh and lockout:** OTP challenges are hashed and rate-limited; verification creates device-bound rotating sessions and short-lived JWTs; refresh reuse remotely revokes active sessions.
 - [ ] **1.3 RBAC and PostgreSQL RLS**
 - [ ] **1.4 Admin unit/user/role APIs and audited moves**
 - [ ] **1.5 Sample seed and hierarchy importer**
