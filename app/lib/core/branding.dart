@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class GoYeBrand {
   static const Color green = Color(0xFF0C5C35);
   static const Color gold = Color(0xFFD8A84A);
@@ -37,16 +39,16 @@ class AboutGoYeDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: const GoYeLogo(size: 56),
-      title: const Text('About Go-Ye'),
+      title: Text(context.l10n.aboutGoYe),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Text(
-            'Go-Ye helps authorised RCCG workers register decisions and provide follow-up with care.',
+          Text(
+            context.l10n.aboutBody,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Text('Built by', style: Theme.of(context).textTheme.labelLarge),
+          Text(context.l10n.builtBy, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
           Image.asset(
             GoYeBrand.infoflexLogoAsset,
@@ -57,7 +59,7 @@ class AboutGoYeDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.l10n.close)),
       ],
     );
   }

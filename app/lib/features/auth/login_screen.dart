@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_providers.dart';
 import '../../core/branding.dart';
+import '../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -42,18 +44,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: _LanguageButton(ref: ref),
+                      ),
                       const GoYeLogo(size: 72),
                       const SizedBox(height: 20),
                       Text(
-                        'Welcome to Go-Ye',
+                        context.l10n.welcome,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         awaitingCode
-                            ? 'Enter the six-digit code sent to your approved contact.'
-                            : 'Sign in with your approved phone number or email address.',
+                            ? context.l10n.codePrompt
+                            : context.l10n.signInPrompt,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
@@ -65,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const <String>[AutofillHints.email, AutofillHints.telephoneNumber],
                           decoration: const InputDecoration(
-                            labelText: 'Phone number or email',
+                            labelText: context.l10n.phoneOrEmail,
                             border: OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _requestCode(),
@@ -75,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: loading ? null : _requestCode,
                           child: loading
                               ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
-                              : const Text('Send sign-in code'),
+                              : Text(context.l10n.sendCode),
                         ),
                       ] else ...<Widget>[
                         Text(
@@ -92,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           maxLength: 6,
                           autofillHints: const <String>[AutofillHints.oneTimeCode],
                           decoration: const InputDecoration(
-                            labelText: 'Six-digit code',
+                            labelText: context.l10n.sixDigitCode,
                             border: OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _verifyCode(),
@@ -102,11 +108,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: loading ? null : _verifyCode,
                           child: loading
                               ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
-                              : const Text('Sign in securely'),
+                              : Text(context.l10n.signInSecurely),
                         ),
                         TextButton(
                           onPressed: loading ? null : _startOver,
-                          child: const Text('Use a different contact'),
+                          child: Text(context.l10n.useDifferentContact),
                         ),
                       ],
                       if (state.message != null) ...<Widget>[
@@ -142,5 +148,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _startOver() {
     _code.clear();
     ref.read(authControllerProvider.notifier).signOut();
+  }
+}
+
+class _LanguageButton extends StatelessWidget {
+  const _LanguageButton({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    return PopupMenuButton<Locale>(
+      tooltip: context.l10n.language,
+      initialValue: locale,
+      onSelected: (Locale value) => ref.read(localeProvider.notifier).state = value,
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<Locale>>[
+        PopupMenuItem<Locale>(value: const Locale('en'), child: Text(context.l10n.english)),
+        PopupMenuItem<Locale>(value: const Locale('yo'), child: Text(context.l10n.yoruba)),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(locale.languageCode.toUpperCase()),
+      ),
+    );
   }
 }

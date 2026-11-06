@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app_providers.dart';
 import 'core/branding.dart';
 import 'features/auth/auth_controller.dart';
+import 'l10n/app_localizations.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/home_shell.dart';
 
@@ -18,6 +20,7 @@ class GoYeApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
     final lightScheme = ColorScheme.fromSeed(
       seedColor: GoYeBrand.green,
       brightness: Brightness.light,
@@ -28,6 +31,14 @@ class GoYeApp extends ConsumerWidget {
     );
     return MaterialApp(
       title: 'Go-Ye',
+      locale: locale,
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),

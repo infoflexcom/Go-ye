@@ -19,3 +19,5 @@ final apiClientProvider = Provider<ApiClient>((Ref ref) {
 });
 
 final themeModeProvider = StateProvider<ThemeMode>((Ref ref) => ThemeMode.system);
+
+final localeProvider = StateProvider<Locale>((Ref ref) => const Locale('en'));
