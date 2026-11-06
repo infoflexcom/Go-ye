@@ -178,3 +178,12 @@ The convert timeline is append-only at database level and uses a monotonically a
 A convert’s reporting attribution is its assigned Parish when assigned, otherwise its registration unit. The database increments that attribution unit and each ancestor exactly once. Thus an above-Parish Unassigned Pool record contributes at its registration level; after Parish assignment it appears at that Parish while common ancestors retain one, not two, contributions.
 
 `convert_rollup_daily` stores current-stage counts by original registration day, reporting unit and stage. Database triggers update it atomically on create, Parish assignment, stage change and duplicate merge; merged sources are removed. Queries use this indexed summary table rather than scanning encrypted convert records. Date filters mean registration dates and stage filters mean the current stage, which is documented for reporting semantics.
+
+## ADR-019 — Global Admin reporting scope, summary semantics and read audit
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+Global multi-country reporting is exposed only under authenticated `GLOBAL_ADMIN` routes and is checked again in the service before a database transaction is opened. Country, Region, country-total and grand-total endpoints read the indexed `convert_rollup_daily` current-stage summary. The grand total sums only Country rows, so a convert represented at Country and its lower ancestors cannot be double-counted. Country-to-Convert detail instead uses the selected Country's `ltree` registration scope, excludes merged source rows and is paginated.
+
+Every report accepts optional inclusive `startDate`, `endDate` and current `stage` filters. Dates retain the roll-up's established registration-day meaning; the drill-down applies the same registration-day predicate to the immutable `created_at` timestamp. Detail PII is decrypted only after the Global Admin/RLS transaction is established; totals contain no PII. Each detail request appends `GLOBAL_ADMIN_CONVERT_DRILL_DOWN_READ` to the existing tamper-evident audit chain, carrying only scope, filter, pagination and result-count metadata.

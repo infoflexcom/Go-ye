@@ -1,5 +1,6 @@
-import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
+import { createCipheriv, randomBytes } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
@@ -10,6 +11,14 @@ import { createTestDatabase } from './support/embedded-postgres.js';
 
 const accessSecret = 'permission-matrix-access-secret-which-is-at-least-thirty-two-bytes';
 const auditSecret = 'permission-matrix-audit-secret-which-is-at-least-thirty-two-bytes';
+const piiKey = Buffer.alloc(32, 5);
+
+function encryptPii(value: string): Buffer {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', piiKey, iv);
+  const ciphertext = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  return Buffer.concat([Buffer.from([1]), iv, cipher.getAuthTag(), ciphertext]);
+}
 
 interface Unit {
   id: string;
@@ -35,6 +44,7 @@ describe('permission test matrix (HTTP + RLS)', () => {
     process.env.JWT_ACCESS_SECRET = accessSecret;
     process.env.OTP_PEPPER = 'permission-matrix-otp-pepper-which-is-at-least-thirty-two-bytes';
     process.env.AUDIT_CHAIN_SECRET = auditSecret;
+    process.env.PII_ENCRYPTION_KEY = piiKey.toString('base64');
     process.env.NODE_ENV = 'test';
 
     async function createUnit(type: string, code: string, parentCode?: string): Promise<void> {
@@ -97,9 +107,29 @@ describe('permission test matrix (HTTP + RLS)', () => {
     await createActor('Parish Alpha', 'NG-PAR-A', 'PARISH_PASTOR');
     await createActor('Parish Beta', 'NG-PAR-B', 'PARISH_PASTOR');
 
+    const globalAdmin = actors.get('Global Admin');
+    if (!globalAdmin) {
+      throw new Error('Global Admin test actor was not created.');
+    }
+    await database.pool.query(
+      `INSERT INTO converts (
+        full_name_encrypted, registered_at_unit_id, registered_by, parish_id,
+        consent_granted, consent_version, consent_method, consent_captured_by, stage
+      ) VALUES ($1, $2, $3, $4, true, '2026-11', 'DIGITAL', $3, 'NEW_CONVERT')`,
+      [
+        encryptPii('HTTP Reporting Convert'),
+        units.get('NG-PAR-A')?.id,
+        globalAdmin.userId,
+        units.get('NG-PAR-A')?.id,
+      ],
+    );
+
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
   }, 30_000);
 
@@ -206,6 +236,58 @@ describe('permission test matrix (HTTP + RLS)', () => {
     await request(httpServer())
       .get(`/api/v1/admin/org-units/${units.get('NG')?.id}`)
       .set('Authorization', bearer('Parish Alpha'))
+      .expect(403);
+  });
+
+  it('serves Global Admin country, region, grand-total and convert drill-down reports only to Global Admin', async () => {
+    const countries = await request(httpServer())
+      .get('/api/v1/admin/reports/countries')
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200);
+    expect(countries.body).toEqual([
+      expect.objectContaining({ code: 'GH', total: 0 }),
+      expect.objectContaining({ code: 'NG', total: 1 }),
+    ]);
+
+    const regions = await request(httpServer())
+      .get(`/api/v1/admin/reports/countries/${units.get('NG')!.id}/regions`)
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200);
+    expect(regions.body).toEqual([expect.objectContaining({ code: 'NG-REG', total: 1 })]);
+
+    await request(httpServer())
+      .get(`/api/v1/admin/reports/countries/${units.get('NG')!.id}/total?stage=NEW_CONVERT`)
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200)
+      .expect(({ body }: { body: unknown }) => {
+        expect(body).toEqual(expect.objectContaining({ countryCode: 'NG', total: 1 }));
+      });
+    await request(httpServer())
+      .get('/api/v1/admin/reports/grand-total?stage=BAPTISED')
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200)
+      .expect(({ body }: { body: unknown }) => {
+        expect(body).toEqual({ total: 0 });
+      });
+
+    const drillDown = await request(httpServer())
+      .get(`/api/v1/admin/reports/countries/${units.get('NG')!.id}/converts?offset=0&limit=1`)
+      .set('Authorization', bearer('Global Admin'))
+      .expect(200);
+    expect(drillDown.body).toMatchObject({
+      total: 1,
+      items: [
+        expect.objectContaining({ fullName: 'HTTP Reporting Convert', stage: 'NEW_CONVERT' }),
+      ],
+    });
+    await request(httpServer())
+      .get(`/api/v1/admin/reports/countries/${units.get('NG')!.id}/converts?limit=101`)
+      .set('Authorization', bearer('Global Admin'))
+      .expect(400);
+
+    await request(httpServer())
+      .get('/api/v1/admin/reports/grand-total')
+      .set('Authorization', bearer('Country Lead'))
       .expect(403);
   });
 });

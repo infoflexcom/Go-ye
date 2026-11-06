@@ -16,7 +16,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - [x] **2.3 Duplicate detection and merge:** HMAC-protected E.164 lookup identifies only RLS-visible candidates; controlled merge preserves a canonical record, prevents cross-country/different-parish collisions and excludes the duplicate from the pool/counts.
 - [x] **2.4 Stage pipeline and append-only timeline:** server-enforced New Convert → Believers’ Class → Baptismal Class → Baptised → Fully Planted transitions require parish assignment and advance one step only; encrypted activity notes/events are append-only and sequence ordered.
 - [x] **2.5 Hierarchy roll-ups and summaries:** trigger-maintained daily current-stage summaries attribute each active convert to its parish when assigned (otherwise registration unit) and every ancestor exactly once; genuine PostgreSQL seeded-data tests prove Parish through Country counts and merged-record exclusion.
-- [ ] **2.6 Global Admin reporting/drill-down**
+- [x] **2.6 Global Admin reporting/drill-down:** authenticated Global Admin-only country list, selected-country Region totals, country and grand totals, plus encrypted Country-to-Convert drill-down are backed by roll-up summaries or indexed hierarchy queries. Registration-date/current-stage filters and drill-down pagination are validated through genuine PostgreSQL service and authenticated HTTP tests; every drill-down is tamper-evidently audited.
 - [ ] **2.7 Removal requests and above-parish read audit**
 - [ ] **2.8 One-million-convert load verification**
 
@@ -56,6 +56,9 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - Added CI jobs for backend, Docker Compose smoke test, Flutter tests and Android debug build, plus manually dispatched macOS/iOS and Windows build scaffolds.
 - Added the first logical ERD and Phase 0 developer-operating instructions.
 - Added versioned PostgreSQL identity/hierarchy/audit/RLS migrations, OTP sessions, rotating refresh tokens and runtime database roles.
+- Added Global Admin reporting endpoints: all-country totals, selected-country Region totals, selected-country totals, a grand total, and paginated Country-to-Convert detail with encrypted PII decrypted only after authorisation.
+- Added stage and registration-date filters to each Global Admin report, used current-stage roll-up summaries for totals, and audited every above-parish convert drill-down read without PII in the audit metadata.
+- Extended genuine PostgreSQL and authenticated HTTP coverage to prove country/Region/grand totals, merged-record exclusion, filters, pagination, Global Admin-only access and drill-down audit creation.
 - Added audited Global Admin hierarchy/user/role APIs and atomic descendant-path rebuilding moves.
 - Added guarded Nigeria/Ghana sample seed data plus validated CSV/XLSX/XLSM hierarchy import/dry-run tooling.
 - Added authenticated HTTP permission matrix coverage with a genuine PostgreSQL `ltree`/RLS database and an enforced auth/authorization coverage gate.
@@ -67,7 +70,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run backend:format:check`                               | Passed                                                                                                                                    |
 | `npm run backend:lint`                                       | Passed                                                                                                                                    |
-| `npm run backend:test`                                       | Passed — 8 files, 21 tests (including authenticated HTTP/RLS matrix)                                                                      |
+| `npm run backend:test`                                       | Passed — 10 files, 32 tests (including authenticated Global Admin reporting, HTTP/RLS and PostgreSQL roll-up coverage)                    |
 | `npm run backend:build`                                      | Passed                                                                                                                                    |
 | `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                  |
 | `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                    |
@@ -101,7 +104,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 
 - `npm audit --omit=dev --audit-level=high` passes, but reports **two moderate production advisories** through `exceljs@4.4.0` → `uuid@8.3.2` (GHSA-w5hq-g745-h8pq). `npm audit fix --force` proposes a breaking downgrade to `exceljs@3.4.0`; it was not applied blindly. Before production deployment, replace or upgrade the spreadsheet library after compatibility/security review, then rerun import tests and the audit.
 - Full development dependency audit also has tooling advisories; production runtime is gated on the production-only high/critical scan above. CI and release governance must continue to review fresh audit output.
-- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds, convert records, consent capture, encryption-at-rest implementation, content, follow-up and reports remain out of Phase 1 scope. Do not begin Phase 2 until sponsor approval says **“proceed.”**
+- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds and real convert records remain excluded from this development repository. Phase 2 still needs Tasks 2.7–2.8 (privacy removal/audit workflow and the one-million-convert load verification) before its completion gate.
 
 ## Known platform constraints
 

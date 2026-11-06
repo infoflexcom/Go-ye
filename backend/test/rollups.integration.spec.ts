@@ -1,10 +1,16 @@
 import { ConfigService } from '@nestjs/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { AdminReportsService } from '../src/admin/admin-reports.service.js';
+import { AuditService } from '../src/audit/audit.service.js';
 import type { AuthenticatedActor } from '../src/authorization/authorization.types.js';
 import { DatabaseService } from '../src/database/database.service.js';
+import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
 import { RollupsService } from '../src/reports/rollups.service.js';
 import type { TestDatabase } from './support/embedded-postgres.js';
 import { createTestDatabase } from './support/embedded-postgres.js';
+
+const piiKey = Buffer.alloc(32, 12).toString('base64');
+const auditSecret = 'rollup-test-audit-secret-which-is-at-least-thirty-two-bytes';
 
 interface Unit {
   id: string;
@@ -15,16 +21,23 @@ describe('convert hierarchy roll-ups', () => {
   let testDatabase: TestDatabase;
   let database: DatabaseService;
   let rollups: RollupsService;
+  let adminReports: AdminReportsService;
+  let encryption: FieldEncryptionService;
   let countryActor: AuthenticatedActor;
   let globalActor: AuthenticatedActor;
   const units = new Map<string, Unit>();
 
   beforeAll(async () => {
     testDatabase = await createTestDatabase();
-    database = new DatabaseService(
-      new ConfigService({ DATABASE_URL: testDatabase.connectionString }),
-    );
+    const config = new ConfigService({
+      DATABASE_URL: testDatabase.connectionString,
+      PII_ENCRYPTION_KEY: piiKey,
+      AUDIT_CHAIN_SECRET: auditSecret,
+    });
+    database = new DatabaseService(config);
+    encryption = new FieldEncryptionService(config);
     rollups = new RollupsService(database);
+    adminReports = new AdminReportsService(database, encryption, config, new AuditService());
 
     async function unit(type: string, code: string, parentCode?: string): Promise<void> {
       const result = await testDatabase.pool.query<Unit>(
@@ -79,7 +92,7 @@ describe('convert hierarchy roll-ups', () => {
         ) VALUES ($1, $2, $3, $4, true, '2026-11', 'DIGITAL', $3, $5::convert_stage)
         RETURNING id`,
         [
-          Buffer.alloc(30, 3),
+          encryption.encrypt(`${registrationCode}-${stage}-${parishCode ?? 'unassigned'}`),
           units.get(registrationCode)?.id,
           countryUser.rows[0].id,
           parishCode ? units.get(parishCode)?.id : null,
@@ -130,6 +143,46 @@ describe('convert hierarchy roll-ups', () => {
       total: 2,
       byStage: { NEW_CONVERT: 2 },
     });
+  });
+
+  it('returns correct Global Admin country, region, country-total, grand-total and drill-down report data', async () => {
+    await expect(adminReports.listCountries(globalActor, {})).resolves.toEqual([
+      { id: units.get('GH')!.id, code: 'GH', name: 'GH', total: 1 },
+      { id: units.get('NG')!.id, code: 'NG', name: 'NG', total: 4 },
+    ]);
+    await expect(adminReports.listRegions(globalActor, units.get('NG')!.id, {})).resolves.toEqual([
+      { id: units.get('NG-REG')!.id, code: 'NG-REG', name: 'NG-REG', total: 4 },
+    ]);
+    await expect(
+      adminReports.countryTotal(globalActor, units.get('NG')!.id, { stage: 'NEW_CONVERT' }),
+    ).resolves.toEqual({ countryId: units.get('NG')!.id, countryCode: 'NG', total: 2 });
+    await expect(adminReports.grandTotal(globalActor, {})).resolves.toEqual({ total: 5 });
+    const drillDown = await adminReports.drillDownCountry(globalActor, units.get('NG')!.id, {});
+    expect(drillDown.total).toBe(4);
+    expect(drillDown.items).toHaveLength(4);
+    expect(typeof drillDown.items[0].registeredAtUnitId).toBe('string');
+    expect(typeof drillDown.items[0].fullName).toBe('string');
+
+    await expect(
+      adminReports.grandTotal(globalActor, { startDate: '1900-01-01', endDate: '1900-01-01' }),
+    ).resolves.toEqual({ total: 0 });
+    const pagedNewConverts = await adminReports.drillDownCountry(globalActor, units.get('NG')!.id, {
+      stage: 'NEW_CONVERT',
+      offset: 1,
+      limit: 1,
+    });
+    expect(pagedNewConverts).toMatchObject({ total: 2 });
+    expect(pagedNewConverts.items).toHaveLength(1);
+    await expect(adminReports.grandTotal(countryActor, {})).rejects.toThrow(
+      'Global Admin access is required',
+    );
+
+    const auditEvents = await testDatabase.pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM audit_log
+       WHERE action = 'GLOBAL_ADMIN_CONVERT_DRILL_DOWN_READ'`,
+    );
+    expect(Number(auditEvents.rows[0].count)).toBe(2);
   });
 
   it('keeps country totals isolated while allowing Global Admin to read a second country', async () => {
