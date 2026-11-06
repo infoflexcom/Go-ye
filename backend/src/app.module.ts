@@ -6,6 +6,7 @@ import { AuthorizationModule } from './authorization/authorization.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { environmentValidationSchema } from './config/environment.validation.js';
 import { DatabaseModule } from './database/database.module.js';
+import { DirectoryModule } from './directory/directory.module.js';
 import { HealthModule } from './health/health.module.js';
 
 @Module({
@@ -18,6 +19,7 @@ import { HealthModule } from './health/health.module.js';
     AuditModule,
     AdminModule,
     AuthModule,
+    DirectoryModule,
     AuthorizationModule,
     HealthModule,
   ],

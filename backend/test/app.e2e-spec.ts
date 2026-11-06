@@ -19,7 +19,7 @@ describe('system endpoints (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('returns the hello response without a database dependency', async () => {
