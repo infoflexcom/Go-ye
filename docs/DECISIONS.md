@@ -133,3 +133,12 @@ The sponsor confirmed the following Phase 0 operating decisions:
 Hierarchy imports are an explicitly authorised, server-side operational action: files are validated as CSV/XLSX/XLSM before one transactional upsert, parent changes use the controlled database move function, and the applied import is audit-recorded. The development Nigeria/Ghana data is blocked by `ALLOW_SAMPLE_SEED=true`; it is never a substitute for the church's authoritative directory. A dry run requires the schema to be migrated already and rolls back all data work.
 
 Swagger/OpenAPI is published by the API at `/api/docs` and `/api/docs-json` with bearer-token documentation. The document exposes contracts, not database credentials or authority; production deployment may restrict its network reachability.
+
+## ADR-014 — Convert capture consent and encrypted contact fields
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+A convert cannot be persisted unless the request carries affirmative consent and a non-blank policy/notice version. The server—not the client—records the consent timestamp and authenticated actor, and database triggers make the registration origin and captured consent immutable. The service also checks consent itself, so direct service use cannot rely only on HTTP DTO validation.
+
+Names, phone numbers and addresses are encrypted at the API boundary with an authenticated AES-256-GCM envelope using the church-owned `PII_ENCRYPTION_KEY`; raw PII is neither placed in audit metadata nor in reporting fields. An authorised non-Global actor registers only at their own home unit. A Global Admin must explicitly name the registration unit. Above-parish records begin without a parish assignment and are handled by the next workflow task.

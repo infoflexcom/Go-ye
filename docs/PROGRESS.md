@@ -5,9 +5,20 @@
 
 ## Current gate
 
-**Phase 1 — foundation: COMPLETE locally. Phase 1 is tagged `phase-1-complete`; wait for sponsor approval before Phase 2.**
+**Phase 2 — convert lifecycle and reporting: IN PROGRESS. Phase 1 remains tagged `phase-1-complete`.**
 
-Phase 1 created the secure engineering and hierarchy foundation only. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reporting and privacy workflows. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+
+## Phase 2 task record
+
+- [x] **2.1 Consent-backed convert capture:** any authorised hierarchy level can register at its own unit; encrypted contact fields, immutable server-captured consent provenance, origin tracking, scoped read/update, and audit events are covered by genuine PostgreSQL tests.
+- [ ] **2.2 Unassigned Pool and parish assignment**
+- [ ] **2.3 Duplicate detection and merge**
+- [ ] **2.4 Stage pipeline and append-only timeline**
+- [ ] **2.5 Hierarchy roll-ups and summaries**
+- [ ] **2.6 Global Admin reporting/drill-down**
+- [ ] **2.7 Removal requests and above-parish read audit**
+- [ ] **2.8 One-million-convert load verification**
 
 ## Phase 1 task record
 
