@@ -17,7 +17,7 @@ Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. P
 - [x] **3.4 Hierarchy browser and Global Admin country selector:** hierarchy browser renders only the signed-in actor’s RLS-scoped directory response; Global Admin receives country totals, selection and selected-country Region totals from the existing reporting API.
 - [x] **3.5 Online New Decision, converts and Unassigned Pool:** the consent-gated one-screen form creates against the shared API; role-scoped convert list/detail, Unassigned Pool ageing display and descendant-parish assignment are live. Added a bounded, RLS-scoped active-convert listing API with above-Parish audit coverage for the client list.
 - [x] **3.6 Scoped counts:** the dashboard resolves every non-Global user’s exact home unit from the RLS-scoped directory and calls its roll-up endpoint; Global Admin gets the grand total. Widget contract coverage proves an Area role requests its Area count rather than a global count.
-- [ ] **3.7 Phone and desktop adaptive layouts**
+- [x] **3.7 Phone and desktop adaptive layouts:** phone widths use bottom navigation and touch-friendly lists; wide layouts switch to a NavigationRail sidebar and a Convert `DataTable`. Widget coverage exercises the wide table breakpoint.
 - [ ] **3.8 Android/Windows same-server run and client test gate**
 
 > Client code has widget/API-contract tests. Flutter, Android and Windows tooling are not installed in this Linux workspace, so the Flutter analysis/test/device-run commands are documented and CI-ready but cannot yet be truthfully marked as locally executed.

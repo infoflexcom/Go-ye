@@ -38,6 +38,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ];
     final selected = destinations[_selectedIndex.clamp(0, destinations.length - 1).toInt()];
 
+    final desktopLayout = MediaQuery.sizeOf(context).width >= 800;
+    final content = switch (selected) {
+      _WorkspaceDestination.dashboard => _DashboardWelcome(session: widget.session),
+      _WorkspaceDestination.newDecision => NewDecisionScreen(isGlobalAdmin: widget.session.isGlobalAdmin),
+      _WorkspaceDestination.converts => const ConvertsListScreen(),
+      _WorkspaceDestination.unassigned => const UnassignedPoolScreen(),
+      _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
+      _WorkspaceDestination.countries => const CountrySelectorScreen(),
+    };
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -77,19 +87,32 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ),
         ],
       ),
-      body: switch (selected) {
-        _WorkspaceDestination.dashboard => _DashboardWelcome(session: widget.session),
-        _WorkspaceDestination.newDecision => NewDecisionScreen(isGlobalAdmin: widget.session.isGlobalAdmin),
-        _WorkspaceDestination.converts => const ConvertsListScreen(),
-        _WorkspaceDestination.unassigned => const UnassignedPoolScreen(),
-        _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
-        _WorkspaceDestination.countries => const CountrySelectorScreen(),
-      },
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        destinations: destinations.map((destination) => _navigationDestination(context, destination)).toList(),
-        onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
-      ),
+      body: desktopLayout
+          ? Row(
+              children: <Widget>[
+                NavigationRail(
+                  extended: MediaQuery.sizeOf(context).width >= 1100,
+                  selectedIndex: _selectedIndex,
+                  labelType: MediaQuery.sizeOf(context).width >= 1100
+                      ? null
+                      : NavigationRailLabelType.all,
+                  destinations: destinations
+                      .map((destination) => _navigationRailDestination(context, destination))
+                      .toList(growable: false),
+                  onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: content),
+              ],
+            )
+          : content,
+      bottomNavigationBar: desktopLayout
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex,
+              destinations: destinations.map((destination) => _navigationDestination(context, destination)).toList(),
+              onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
+            ),
     );
   }
 
@@ -120,6 +143,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           label: context.l10n.countries,
         ),
     };
+  }
+
+  NavigationRailDestination _navigationRailDestination(
+    BuildContext context,
+    _WorkspaceDestination destination,
+  ) {
+    final navigation = _navigationDestination(context, destination);
+    return NavigationRailDestination(icon: navigation.icon, label: Text(navigation.label));
   }
 
   bool _canRegisterConverts(Session session) {
