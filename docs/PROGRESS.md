@@ -15,7 +15,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - [x] **2.2 Unassigned Pool and parish assignment:** above-parish registrations surface with a live age-in-days counter; controlled descendant-parish assignment is one-time, schedules the 24-hour/Day-3/Day-7 plan, and parish-origin registrations are assigned/scheduled immediately.
 - [x] **2.3 Duplicate detection and merge:** HMAC-protected E.164 lookup identifies only RLS-visible candidates; controlled merge preserves a canonical record, prevents cross-country/different-parish collisions and excludes the duplicate from the pool/counts.
 - [x] **2.4 Stage pipeline and append-only timeline:** server-enforced New Convert → Believers’ Class → Baptismal Class → Baptised → Fully Planted transitions require parish assignment and advance one step only; encrypted activity notes/events are append-only and sequence ordered.
-- [ ] **2.5 Hierarchy roll-ups and summaries**
+- [x] **2.5 Hierarchy roll-ups and summaries:** trigger-maintained daily current-stage summaries attribute each active convert to its parish when assigned (otherwise registration unit) and every ancestor exactly once; genuine PostgreSQL seeded-data tests prove Parish through Country counts and merged-record exclusion.
 - [ ] **2.6 Global Admin reporting/drill-down**
 - [ ] **2.7 Removal requests and above-parish read audit**
 - [ ] **2.8 One-million-convert load verification**

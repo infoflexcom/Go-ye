@@ -8,6 +8,7 @@ import { environmentValidationSchema } from './config/environment.validation.js'
 import { ConvertsModule } from './converts/converts.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { PrivacyModule } from './privacy/privacy.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 import { DirectoryModule } from './directory/directory.module.js';
 import { HealthModule } from './health/health.module.js';
 
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module.js';
     AuthModule,
     DirectoryModule,
     ConvertsModule,
+    ReportsModule,
     AuthorizationModule,
     HealthModule,
   ],

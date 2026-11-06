@@ -169,3 +169,12 @@ A merge marks only the duplicate as `merged_into_id`; the canonical record survi
 The sponsor-confirmed stage sequence is fixed for the initial policy: New Convert → Believers’ Class → Baptismal Class → Baptised → Fully Planted. A convert must be assigned to a Parish before a transition and may advance exactly one step; skips and reversals require a future authorised correction workflow, not a silent overwrite.
 
 The convert timeline is append-only at database level and uses a monotonically assigned event sequence for reliable chronology even when several events share one transaction timestamp. Notes are encrypted with the same field encryption key; audit/timeline metadata contains identifiers and event facts only, never raw contact data.
+
+## ADR-018 — Real-time, no-double-count hierarchy roll-ups
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+A convert’s reporting attribution is its assigned Parish when assigned, otherwise its registration unit. The database increments that attribution unit and each ancestor exactly once. Thus an above-Parish Unassigned Pool record contributes at its registration level; after Parish assignment it appears at that Parish while common ancestors retain one, not two, contributions.
+
+`convert_rollup_daily` stores current-stage counts by original registration day, reporting unit and stage. Database triggers update it atomically on create, Parish assignment, stage change and duplicate merge; merged sources are removed. Queries use this indexed summary table rather than scanning encrypted convert records. Date filters mean registration dates and stage filters mean the current stage, which is documented for reporting semantics.
