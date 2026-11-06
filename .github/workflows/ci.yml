@@ -120,6 +120,66 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  android-client-integration:
+    name: Android client integration route
+    needs: flutter-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate native runner projects and branding
+        working-directory: app
+        run: ./tool/bootstrap_platforms.sh
+      - name: Fetch Flutter packages
+        working-directory: app
+        run: flutter pub get
+      - name: Run Android integration route
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          working-directory: app
+          script: flutter test integration_test/otp_client_flow_test.dart
+
+  windows-client-integration:
+    name: Windows client integration route
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Windows runner and apply branding
+        working-directory: app
+        shell: pwsh
+        run: ./tool/bootstrap_windows.ps1
+      - name: Fetch Flutter packages
+        working-directory: app
+        shell: pwsh
+        run: flutter pub get
+      - name: Check Dart formatting and analysis
+        working-directory: app
+        shell: pwsh
+        run: |
+          dart format --output=none --set-exit-if-changed lib test integration_test
+          flutter analyze
+      - name: Run Windows widget and integration tests
+        working-directory: app
+        shell: pwsh
+        run: |
+          flutter test
+          flutter test integration_test/otp_client_flow_test.dart -d windows
+
   ios-scaffold:
     name: iOS unsigned scaffold build
     if: >-

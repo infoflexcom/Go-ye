@@ -27,3 +27,15 @@ The bootstrap script is intentionally committed because this Linux workspace doe
 ## Same server on Android and Windows
 
 Both launches must use the same API URL and authorised credentials. For an Android emulator against a backend on the development host, use `http://10.0.2.2:3000/api/v1/`; for Windows running on that host, use `http://localhost:3000/api/v1/`. For a physical phone and a separate Windows machine, use the same TLS LAN/VPN hostname, for example `https://goye-pilot.example.org/api/v1/`. Do not use `localhost` on a physical phone: it refers to the phone itself.
+
+## Android/Windows shared-server verification
+
+Run this acceptance check only with a disposable, authorised pilot/test account and a server that both devices can reach over TLS:
+
+1. Start the single NestJS/PostgreSQL environment and run migrations. Seed the approved test hierarchy and test identities; do not use production identities or convert data.
+2. Launch Android and Windows with the **same** `API_BASE_URL` (a physical phone needs the shared LAN/VPN hostname, not `localhost`).
+3. Sign in on Android, register a consented test decision, then refresh the Windows **Converts** view and confirm the same record and scoped count appear.
+4. Register a different consented test decision on Windows, then refresh Android and confirm it appears there. Check every hierarchy-role test account sees only its permitted home-unit/descendant data.
+5. Remove/anonymise the disposable test records through the authorised privacy workflow, then preserve the test log without tokens or PII.
+
+The automated `integration_test/otp_client_flow_test.dart` runs the identical Flutter client route on each supported target with a transport test double. The manual check above is still required to prove real Android/Windows devices reach the same deployed server/database and to obtain an OTP from the approved delivery provider.
