@@ -239,6 +239,58 @@ describe('ConvertsService', () => {
     expect(scheduled.rows[0].count).toBe('3');
   });
 
+  it('advances the fixed stage pipeline one step at a time and retains an append-only encrypted timeline', async () => {
+    const parishConvert = await converts.create(parishActor, {
+      fullName: 'Timeline Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    expect(parishConvert.stage).toBe('NEW_CONVERT');
+
+    const advanced = await converts.advanceStage(parishActor, parishConvert.id, {
+      stage: 'BELIEVERS_CLASS',
+      note: 'Attended first class.',
+    });
+    expect(advanced.stage).toBe('BELIEVERS_CLASS');
+    await expect(
+      converts.advanceStage(parishActor, parishConvert.id, { stage: 'BAPTISED' }),
+    ).rejects.toThrow(/exactly one configured step/i);
+
+    const activity = await converts.addActivity(parishActor, parishConvert.id, {
+      note: 'Called and encouraged attendance.',
+    });
+    expect(activity).toMatchObject({
+      eventType: 'NOTE',
+      note: 'Called and encouraged attendance.',
+    });
+    const timeline = await converts.timeline(parishActor, parishConvert.id);
+    expect(timeline.map((event) => event.eventType)).toEqual([
+      'REGISTERED',
+      'PARISH_ASSIGNED',
+      'STAGE_ADVANCED',
+      'NOTE',
+    ]);
+    expect(timeline[2]).toMatchObject({
+      fromStage: 'NEW_CONVERT',
+      toStage: 'BELIEVERS_CLASS',
+      note: 'Attended first class.',
+    });
+
+    const storedNote = await testDatabase.pool.query<{ note_encrypted: Buffer }>(
+      `SELECT note_encrypted FROM convert_timeline_events
+       WHERE convert_id = $1 AND event_type = 'NOTE'`,
+      [parishConvert.id],
+    );
+    expect(storedNote.rows[0].note_encrypted.toString('utf8')).not.toContain(
+      'Called and encouraged',
+    );
+    await expect(
+      testDatabase.pool.query(
+        `UPDATE convert_timeline_events SET metadata = '{"tampered":true}'::jsonb WHERE id = $1`,
+        [timeline[0].id],
+      ),
+    ).rejects.toThrow(/append-only/i);
+  });
+
   it('detects visible phone duplicates and merges only the duplicate into a canonical convert', async () => {
     const primary = await converts.create(areaActor, {
       fullName: 'Primary Candidate',

@@ -9,6 +9,8 @@ import {
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { CurrentActor } from '../authorization/current-actor.decorator.js';
 import { JwtAuthGuard } from '../authorization/jwt-auth.guard.js';
+import { AddConvertActivityDto } from './dto/add-convert-activity.dto.js';
+import { AdvanceConvertStageDto } from './dto/advance-convert-stage.dto.js';
 import { AssignConvertDto } from './dto/assign-convert.dto.js';
 import { DetectDuplicateDto } from './dto/detect-duplicate.dto.js';
 import { MergeConvertDto } from './dto/merge-convert.dto.js';
@@ -31,6 +33,32 @@ export class ConvertsController {
   })
   create(@CurrentActor() actor: AuthenticatedActor, @Body() dto: CreateConvertDto) {
     return this.converts.create(actor, dto);
+  }
+
+  @Get(':id/timeline')
+  @ApiOperation({ summary: 'Read the append-only scoped convert activity timeline' })
+  timeline(@CurrentActor() actor: AuthenticatedActor, @Param('id') id: string) {
+    return this.converts.timeline(actor, id);
+  }
+
+  @Post(':id/activities')
+  @ApiOperation({ summary: 'Append an encrypted activity note to a convert timeline' })
+  addActivity(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Body() dto: AddConvertActivityDto,
+  ) {
+    return this.converts.addActivity(actor, id, dto);
+  }
+
+  @Post(':id/stage')
+  @ApiOperation({ summary: 'Advance one configured stage after parish assignment' })
+  advanceStage(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Body() dto: AdvanceConvertStageDto,
+  ) {
+    return this.converts.advanceStage(actor, id, dto);
   }
 
   @Get('duplicates')

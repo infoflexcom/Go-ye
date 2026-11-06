@@ -160,3 +160,12 @@ Assignment is a one-time controlled database operation: it cannot cross the regi
 Duplicate discovery uses a keyed HMAC-SHA-256 of normalised E.164 phone numbers (`PII_LOOKUP_PEPPER`), never a raw contact number or unsalted public digest. Candidates remain subject to the caller's RLS scope. Detection informs an authorised human; it does not silently merge people with a shared household phone number.
 
 A merge marks only the duplicate as `merged_into_id`; the canonical record survives, so subsequent totals count once. Cross-country and conflicting-Parish merges are rejected. Pending duplicate follow-up actions are cancelled where they collide, while non-duplicate historical actions transfer to the canonical record. A future reassignment/transfer workflow is required before merging conflicting Parish ownership.
+
+## ADR-017 — Stage transitions and immutable activity chronology
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+The sponsor-confirmed stage sequence is fixed for the initial policy: New Convert → Believers’ Class → Baptismal Class → Baptised → Fully Planted. A convert must be assigned to a Parish before a transition and may advance exactly one step; skips and reversals require a future authorised correction workflow, not a silent overwrite.
+
+The convert timeline is append-only at database level and uses a monotonically assigned event sequence for reliable chronology even when several events share one transaction timestamp. Notes are encrypted with the same field encryption key; audit/timeline metadata contains identifiers and event facts only, never raw contact data.

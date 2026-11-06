@@ -12,11 +12,26 @@ import type { AuthenticatedActor } from '../authorization/authorization.types.js
 import { normalizeIdentity } from '../auth/auth.identity.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
+import type { AddConvertActivityDto } from './dto/add-convert-activity.dto.js';
+import type { AdvanceConvertStageDto } from './dto/advance-convert-stage.dto.js';
 import type { AssignConvertDto } from './dto/assign-convert.dto.js';
 import type { DetectDuplicateDto } from './dto/detect-duplicate.dto.js';
 import type { MergeConvertDto } from './dto/merge-convert.dto.js';
 import type { CreateConvertDto } from './dto/create-convert.dto.js';
 import type { UpdateConvertDto } from './dto/update-convert.dto.js';
+
+export type ConvertStage =
+  'NEW_CONVERT' | 'BELIEVERS_CLASS' | 'BAPTISMAL_CLASS' | 'BAPTISED' | 'FULLY_PLANTED';
+
+export interface ConvertTimelineEvent {
+  id: string;
+  eventType: string;
+  fromStage?: ConvertStage;
+  toStage?: ConvertStage;
+  note?: string;
+  actorUserId: string;
+  occurredAt: Date;
+}
 
 const convertWorkerRoles = new Set([
   'COUNTRY_ADMIN',
@@ -42,12 +57,24 @@ type ConvertDatabaseRow = {
   merged_into_id: string | null;
   merged_at: Date | null;
   merged_by: string | null;
+  stage: ConvertStage;
+  stage_changed_at: Date;
   consent_version: string;
   consent_method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
   consent_captured_at: Date;
   consent_captured_by: string;
   created_at: Date;
   updated_at: Date;
+};
+
+type TimelineDatabaseRow = {
+  id: string;
+  event_type: string;
+  from_stage: ConvertStage | null;
+  to_stage: ConvertStage | null;
+  note_encrypted: Buffer | null;
+  actor_user_id: string;
+  occurred_at: Date;
 };
 
 export interface ConvertRecord {
@@ -63,6 +90,8 @@ export interface ConvertRecord {
   mergedIntoId?: string;
   mergedAt?: Date;
   mergedBy?: string;
+  stage: ConvertStage;
+  stageChangedAt: Date;
   consent: {
     version: string;
     method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
@@ -144,7 +173,9 @@ export class ConvertsService {
           consentMethod: row.consent_method,
         },
       });
+      await this.appendTimelineEvent(client, row.id, 'REGISTERED', actor.id);
       if (row.parish_id) {
+        await this.appendTimelineEvent(client, row.id, 'PARISH_ASSIGNED', actor.id);
         await this.audit.append(client, {
           actorUserId: actor.id,
           action: 'CONVERT_ASSIGNED_TO_PARISH',
@@ -203,6 +234,22 @@ export class ConvertsService {
         actor.id,
       ]);
       const target = await this.getInTransaction(client, targetConvertId);
+      await this.appendTimelineEvent(
+        client,
+        dto.duplicateConvertId,
+        'MERGED_INTO',
+        actor.id,
+        undefined,
+        { canonicalConvertId: targetConvertId },
+      );
+      await this.appendTimelineEvent(
+        client,
+        targetConvertId,
+        'MERGED_DUPLICATE',
+        actor.id,
+        undefined,
+        { duplicateConvertId: dto.duplicateConvertId },
+      );
       await this.audit.append(client, {
         actorUserId: actor.id,
         action: 'CONVERT_MERGED',
@@ -212,6 +259,70 @@ export class ConvertsService {
         metadata: { mergedDuplicateConvertId: dto.duplicateConvertId },
       });
       return this.toRecord(target);
+    });
+  }
+
+  async advanceStage(
+    actor: AuthenticatedActor,
+    id: string,
+    dto: AdvanceConvertStageDto,
+  ): Promise<ConvertRecord> {
+    this.assertConvertWorker(actor);
+    const note = dto.note === undefined ? undefined : this.requiredText(dto.note, 'note');
+    return this.withConvertActor(actor, async (client) => {
+      await client.query(
+        'SELECT * FROM goye_advance_convert_stage($1, $2::convert_stage, $3, $4)',
+        [id, dto.stage, actor.id, note ? this.encryption.encrypt(note) : null],
+      );
+      const row = await this.getInTransaction(client, id);
+      await this.audit.append(client, {
+        actorUserId: actor.id,
+        action: 'CONVERT_STAGE_ADVANCED',
+        resourceType: 'CONVERT',
+        resourceId: row.id,
+        scopeUnitId: row.parish_id ?? row.registered_at_unit_id,
+        metadata: { stage: row.stage },
+      });
+      return this.toRecord(row);
+    });
+  }
+
+  async addActivity(
+    actor: AuthenticatedActor,
+    id: string,
+    dto: AddConvertActivityDto,
+  ): Promise<ConvertTimelineEvent> {
+    this.assertConvertWorker(actor);
+    const note = this.requiredText(dto.note, 'note');
+    return this.withConvertActor(actor, async (client) => {
+      await this.appendTimelineEvent(client, id, 'NOTE', actor.id, note);
+      const result = await client.query<TimelineDatabaseRow>(
+        `SELECT id, event_type::text, from_stage::text, to_stage::text, note_encrypted, actor_user_id, occurred_at
+         FROM convert_timeline_events WHERE convert_id = $1 ORDER BY event_sequence DESC LIMIT 1`,
+        [id],
+      );
+      return this.toTimelineEvent(result.rows[0]);
+    });
+  }
+
+  async timeline(actor: AuthenticatedActor, id: string): Promise<ConvertTimelineEvent[]> {
+    this.assertConvertWorker(actor);
+    return this.withConvertActor(actor, async (client) => {
+      const result = await client.query<TimelineDatabaseRow>(
+        `SELECT id, event_type::text, from_stage::text, to_stage::text, note_encrypted, actor_user_id, occurred_at
+         FROM convert_timeline_events WHERE convert_id = $1 ORDER BY event_sequence ASC`,
+        [id],
+      );
+      if (result.rows.length === 0) {
+        const convert = await client.query<{ id: string }>(
+          'SELECT id FROM converts WHERE id = $1',
+          [id],
+        );
+        if (!convert.rows[0]) {
+          throw new NotFoundException('Convert not found.');
+        }
+      }
+      return result.rows.map((row) => this.toTimelineEvent(row));
     });
   }
 
@@ -243,6 +354,7 @@ export class ConvertsService {
     return this.withConvertActor(actor, async (client) => {
       await this.assignToParishInTransaction(client, id, dto.parishId, actor.id);
       const row = await this.getInTransaction(client, id);
+      await this.appendTimelineEvent(client, row.id, 'PARISH_ASSIGNED', actor.id);
       await this.audit.append(client, {
         actorUserId: actor.id,
         action: 'CONVERT_ASSIGNED_TO_PARISH',
@@ -309,6 +421,28 @@ export class ConvertsService {
       });
       return this.toRecord(row);
     });
+  }
+
+  private async appendTimelineEvent(
+    client: PoolClient,
+    convertId: string,
+    eventType: 'REGISTERED' | 'PARISH_ASSIGNED' | 'NOTE' | 'MERGED_INTO' | 'MERGED_DUPLICATE',
+    actorId: string,
+    note?: string,
+    metadata: Record<string, string> = {},
+  ): Promise<void> {
+    await client.query(
+      `SELECT goye_append_convert_timeline_event(
+        $1, $2::convert_timeline_event_type, $3, $4, $5::jsonb
+      )`,
+      [
+        convertId,
+        eventType,
+        actorId,
+        note ? this.encryption.encrypt(note) : null,
+        JSON.stringify(metadata),
+      ],
+    );
   }
 
   private async assignToParishInTransaction(
@@ -399,9 +533,24 @@ export class ConvertsService {
   private convertColumns(): string {
     return `id, full_name_encrypted, phone_encrypted, address_encrypted,
       registered_at_unit_id, registered_by, parish_id, assigned_at, assigned_by,
-      merged_into_id, merged_at, merged_by,
+      merged_into_id, merged_at, merged_by, stage::text, stage_changed_at,
       consent_version, consent_method::text, consent_captured_at, consent_captured_by,
       created_at, updated_at`;
+  }
+
+  private toTimelineEvent(row: TimelineDatabaseRow | undefined): ConvertTimelineEvent {
+    if (!row) {
+      throw new NotFoundException('Convert activity not found.');
+    }
+    return {
+      id: row.id,
+      eventType: row.event_type,
+      ...(row.from_stage ? { fromStage: row.from_stage } : {}),
+      ...(row.to_stage ? { toStage: row.to_stage } : {}),
+      ...(row.note_encrypted ? { note: this.encryption.decrypt(row.note_encrypted) } : {}),
+      actorUserId: row.actor_user_id,
+      occurredAt: row.occurred_at,
+    };
   }
 
   private toRecord(row: ConvertDatabaseRow): ConvertRecord {
@@ -418,6 +567,8 @@ export class ConvertsService {
       ...(row.merged_into_id ? { mergedIntoId: row.merged_into_id } : {}),
       ...(row.merged_at ? { mergedAt: row.merged_at } : {}),
       ...(row.merged_by ? { mergedBy: row.merged_by } : {}),
+      stage: row.stage,
+      stageChangedAt: row.stage_changed_at,
       consent: {
         version: row.consent_version,
         method: row.consent_method,
