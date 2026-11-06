@@ -124,3 +124,12 @@ The sponsor confirmed the following Phase 0 operating decisions:
 - The authoritative country-to-parish hierarchy list will be supplied for import; sample operational hierarchy data must not be treated as canonical.
 - Confirm the initial configurable policy: call within 24 hours, prayer on Day 3, visit on Day 7, then weekly; stages are New Convert → Believers’ Class → Baptismal Class → Baptised → Parish Integration (Fully Planted).
 - Approve the supplied RCCG `logo.jpg` for the application icon and splash. INFOFLEX `logo-source.png` remains restricted to About/Built-by, installer and administrative footer contexts.
+
+## ADR-013 — Hierarchy bulk import and documentation boundary
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+Hierarchy imports are an explicitly authorised, server-side operational action: files are validated as CSV/XLSX/XLSM before one transactional upsert, parent changes use the controlled database move function, and the applied import is audit-recorded. The development Nigeria/Ghana data is blocked by `ALLOW_SAMPLE_SEED=true`; it is never a substitute for the church's authoritative directory. A dry run requires the schema to be migrated already and rolls back all data work.
+
+Swagger/OpenAPI is published by the API at `/api/docs` and `/api/docs-json` with bearer-token documentation. The document exposes contracts, not database credentials or authority; production deployment may restrict its network reachability.

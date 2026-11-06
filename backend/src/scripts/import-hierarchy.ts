@@ -1,5 +1,4 @@
 import { Pool } from 'pg';
-import { migrateUp } from '../database/migrations.js';
 import { applyHierarchyImport, readHierarchyFile } from '../hierarchy/hierarchy-import.js';
 import { beginSystemTransaction, requiredEnvironment } from './database-script.util.js';
 
@@ -18,7 +17,6 @@ async function main(): Promise<void> {
   const pool = new Pool({ connectionString: requiredEnvironment('DATABASE_URL') });
   const client = await pool.connect();
   try {
-    await migrateUp(client);
     await beginSystemTransaction(client, requiredEnvironment('AUDIT_CHAIN_SECRET'));
     const result = await applyHierarchyImport(client, rows);
     if (dryRun) {

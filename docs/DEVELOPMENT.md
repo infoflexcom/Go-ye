@@ -34,6 +34,7 @@ The API Swagger UI is available at `http://localhost:3000/api/docs`.
 npm run backend:format:check
 npm run backend:lint
 npm run backend:test
+npm --workspace=@goye/backend run test:coverage
 npm run backend:build
 python3 scripts/validate_foundation.py
 
@@ -55,3 +56,13 @@ Run `npm run format` before committing a broad change. Any generated release pac
 ## Platform build boundaries
 
 The Linux workspace used for this phase has no Docker executable, Flutter SDK, Android SDK, Java or Windows/macOS build tools. The commands and CI workflow are provided but were not falsely claimed as locally executed. The Android CI job builds an unsigned debug APK; iOS and Windows scaffold jobs are manual `workflow_dispatch` jobs until church-owned signing assets and release governance are supplied.
+
+## Hierarchy operations (Phase 1)
+
+Read [HIERARCHY_AND_PERMISSIONS.md](HIERARCHY_AND_PERMISSIONS.md) before changing the church directory. Run database migrations before any import. A validated, rollback-only preview is available with:
+
+```bash
+npm run hierarchy:import --workspace=@goye/backend -- --file ./hierarchy.xlsx --dry-run
+```
+
+The Nigeria/Ghana sample is strictly development-only and requires `ALLOW_SAMPLE_SEED=true`; never use it with real church records. Swagger UI is served at `/api/docs`, with machine-readable OpenAPI at `/api/docs-json`.

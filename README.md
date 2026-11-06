@@ -2,9 +2,9 @@
 
 Go-Ye is RCCG's secure, offline-first soul-winning, convert follow-up and reporting platform. One Flutter application will serve Android, iOS and Windows against one NestJS/PostgreSQL backend.
 
-## Phase 0 — clean skeleton
+## Phase 1 — secure hierarchy foundation
 
-This repository now contains the safe starting skeleton only. It has no identity data, church hierarchy, converts, user accounts or schema migrations yet.
+The secure identity, session, seven-level hierarchy, RLS, Global Admin, import and OpenAPI foundation is complete. Convert capture, follow-up, content, reporting and mobile/desktop workflows are deliberately deferred to later approved phases.
 
 ```text
 app/       Flutter/Riverpod client source and platform bootstrap
@@ -35,7 +35,9 @@ For Flutter setup and Android/Windows launch instructions, see [`app/README.md`]
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, requirements traceability and delivery gates.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — append-only decisions and safe defaults.
-- [`docs/ERD.md`](docs/ERD.md) — first logical entity relationship model and migration constraints.
+- [`docs/ERD.md`](docs/ERD.md) — logical entity relationship model and migration constraints.
+- [`docs/HIERARCHY_AND_PERMISSIONS.md`](docs/HIERARCHY_AND_PERMISSIONS.md) — fixed hierarchy, RLS, import and access operations.
+- [`docs/OPENAPI.md`](docs/OPENAPI.md) — Swagger UI and OpenAPI contract endpoints.
 - [`docs/PROGRESS.md`](docs/PROGRESS.md) — current phase gate and next work.
 - [`infra/README.md`](infra/README.md) — Docker Compose stack instructions.
 

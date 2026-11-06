@@ -5,9 +5,9 @@
 
 ## Current gate
 
-**Phase 1 — foundation: IN PROGRESS. Phase 0 remains tagged `phase-0-complete`.**
+**Phase 1 — foundation: COMPLETE locally. Phase 1 is tagged `phase-1-complete`; wait for sponsor approval before Phase 2.**
 
-This phase created only the safe engineering foundation. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack.
+Phase 1 created the secure engineering and hierarchy foundation only. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
 
 ## Phase 1 task record
 
@@ -16,8 +16,8 @@ This phase created only the safe engineering foundation. No real convert, church
 - [x] **1.3 RBAC and PostgreSQL RLS:** request actors are derived from fresh active sessions and roles; the runtime database role is non-superuser/non-BYPASSRLS; PostgreSQL policies enforce home-unit-plus-descendant scope.
 - [x] **1.4 Admin unit/user/role APIs and audited moves:** Global Admin endpoints create/edit/deactivate/move units and manage users/roles; moves rebuild descendant paths transactionally and append tamper-evident audit entries.
 - [x] **1.5 Sample seed and hierarchy importer:** guarded sample seed supplies Nigeria and Ghana fixtures; CSV/XLSX import validates, dry-runs, upserts and uses the managed move function where needed.
-- [ ] **1.6 Permission test matrix and coverage gate**
-- [ ] **1.7 Swagger publication and hierarchy/permissions documentation**
+- [x] **1.6 Permission test matrix and coverage gate:** HTTP-level authenticated PostgreSQL/RLS matrix proves parish isolation, upper-level descendant scope, Global Admin visibility, explicit role 403 and scoped ID-guess 404; auth/authorization coverage is enforced at ≥80% statements/functions/lines.
+- [x] **1.7 Swagger publication and hierarchy/permissions documentation:** Swagger UI/OpenAPI JSON are published at `/api/docs` and `/api/docs-json`; hierarchy, RLS, import and role operational documentation is complete.
 
 ## Exit criteria record
 
@@ -29,7 +29,11 @@ This phase created only the safe engineering foundation. No real convert, church
 - [x] `ARCHITECTURE.md`, `DECISIONS.md`, `PROGRESS.md`, `DEVELOPMENT.md` and the initial logical `ERD.md` exist.
 - [x] The six required sponsor questions were sent together and all six responses were received.
 - [x] Sponsor confirmations recorded in `docs/DECISIONS.md` (ADR-012).
-- [x] Annotated Git tag `phase-0-complete` is created after final documentation validation.
+- [x] Phase 1 permission matrix is 100% green: parish isolation, Area and all upper-level descendants, Global Admin visibility, role-denial `403`, and scoped ID-guess `404` are exercised through authenticated HTTP APIs and genuine PostgreSQL RLS.
+- [x] Auth/authorization coverage gate passes: **86.29% statements**, **84.21% functions**, and **86.22% lines** (threshold: 80% each).
+- [x] A controlled unit move test proves an Area and its Parish descendant both receive rebuilt `ltree` paths and an audit event.
+- [x] Swagger UI and OpenAPI JSON are published and live-smoke-verified at `/api/docs` and `/api/docs-json` (OpenAPI 3.0.0, 15 paths, bearer scheme).
+- [x] Annotated Git tag `phase-0-complete` is retained and `phase-1-complete` is created after final validation.
 
 ## Completed in this increment
 
@@ -40,6 +44,11 @@ This phase created only the safe engineering foundation. No real convert, church
 - Added Prettier, type-aware ESLint, Dart/Flutter formatting and analysis commands, and Husky/lint-staged pre-commit configuration.
 - Added CI jobs for backend, Docker Compose smoke test, Flutter tests and Android debug build, plus manually dispatched macOS/iOS and Windows build scaffolds.
 - Added the first logical ERD and Phase 0 developer-operating instructions.
+- Added versioned PostgreSQL identity/hierarchy/audit/RLS migrations, OTP sessions, rotating refresh tokens and runtime database roles.
+- Added audited Global Admin hierarchy/user/role APIs and atomic descendant-path rebuilding moves.
+- Added guarded Nigeria/Ghana sample seed data plus validated CSV/XLSX/XLSM hierarchy import/dry-run tooling.
+- Added authenticated HTTP permission matrix coverage with a genuine PostgreSQL `ltree`/RLS database and an enforced auth/authorization coverage gate.
+- Published Swagger/OpenAPI and documented hierarchy, RLS, imports, role semantics and operational constraints.
 
 ## Validation record
 
@@ -47,15 +56,17 @@ This phase created only the safe engineering foundation. No real convert, church
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run backend:format:check`                               | Passed                                                                                                                                    |
 | `npm run backend:lint`                                       | Passed                                                                                                                                    |
-| `npm run backend:test`                                       | Passed — 2 files, 3 tests                                                                                                                 |
+| `npm run backend:test`                                       | Passed — 8 files, 21 tests (including authenticated HTTP/RLS matrix)                                                                      |
 | `npm run backend:build`                                      | Passed                                                                                                                                    |
-| `npm audit --omit=dev --audit-level=high`                    | Passed — 0 production vulnerabilities                                                                                                     |
+| `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                  |
 | `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                    |
 | `npx prettier --check .`                                     | Passed                                                                                                                                    |
 | `git diff --check`                                           | Passed                                                                                                                                    |
 | Local compiled API `GET /api/v1/hello`                       | Passed — returned documented response                                                                                                     |
 | Local compiled API `GET /api/v1/health`                      | Passed — API healthy; database intentionally not configured outside Compose                                                               |
 | Supplied asset copy SHA-256 comparison                       | Passed — four source/copy pairs match                                                                                                     |
+| `npm --workspace=@goye/backend run test:coverage`            | Passed — auth/authorization: 86.29% statements, 84.21% functions, 86.22% lines (all ≥80%)                                                 |
+| Live compiled Swagger smoke                                  | Passed — `/api/docs` returned 200; `/api/docs-json` returned OpenAPI 3.0.0, 15 paths and bearer security                                  |
 | Docker Compose / Flutter / Android emulator / Windows launch | Not runnable in this workspace; CI configuration is present, but remote Actions dispatch is currently not authorised for this integration |
 
 ## Sponsor confirmations received
@@ -67,13 +78,19 @@ This phase created only the safe engineering foundation. No real convert, church
 - **Journey policy:** default schedule and five stage names are confirmed.
 - **RCCG logo:** approved for the Go-Ye app icon and splash.
 
-## Scope deferred to Phase 1
+## Scope deferred to Phase 2 and later
 
 - Versioned PostgreSQL `ltree` migrations, rollback notes, RLS policies and tamper-evident audit implementation.
 - Authentication/OTP, session security, role assignments, church hierarchy import and global-admin bootstrap.
 - Encrypted local Drift/SQLCipher storage, offline sync protocol and encrypted PII.
 - Convert journey, Unassigned Pool, duplicate handling, follow-up scheduling/escalation, content sharing, reports and notifications.
 - Production cloud provisioning, provider accounts, signing, release packages, security review and pilot data collection.
+
+## Known issues and approval boundary
+
+- `npm audit --omit=dev --audit-level=high` passes, but reports **two moderate production advisories** through `exceljs@4.4.0` → `uuid@8.3.2` (GHSA-w5hq-g745-h8pq). `npm audit fix --force` proposes a breaking downgrade to `exceljs@3.4.0`; it was not applied blindly. Before production deployment, replace or upgrade the spreadsheet library after compatibility/security review, then rerun import tests and the audit.
+- Full development dependency audit also has tooling advisories; production runtime is gated on the production-only high/critical scan above. CI and release governance must continue to review fresh audit output.
+- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds, convert records, consent capture, encryption-at-rest implementation, content, follow-up and reports remain out of Phase 1 scope. Do not begin Phase 2 until sponsor approval says **“proceed.”**
 
 ## Known platform constraints
 

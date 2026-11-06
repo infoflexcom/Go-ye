@@ -35,6 +35,15 @@ async function bootstrap(): Promise<void> {
       .setTitle('Go-Ye API')
       .setDescription('RCCG soul-winning and follow-up API')
       .setVersion('0.1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Short-lived Go-Ye access token.',
+        },
+        'bearer',
+      )
       .build(),
   );
   SwaggerModule.setup('api/docs', app, swaggerDocument);
