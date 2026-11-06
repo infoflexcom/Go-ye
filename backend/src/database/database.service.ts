@@ -35,6 +35,7 @@ export class DatabaseService implements OnModuleDestroy {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      await client.query('SET LOCAL ROLE goye_runtime');
       await client.query(
         `SELECT
           set_config('goye.user_id', $1, true),

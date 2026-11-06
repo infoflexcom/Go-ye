@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { PoolClient } from 'pg';
 import { AuditService } from '../audit/audit.service.js';
+import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { DatabaseService } from '../database/database.service.js';
 import {
   keyedHash,
@@ -273,6 +274,55 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token is invalid.');
     }
     return tokens;
+  }
+
+  async authenticateAccessToken(accessToken: string): Promise<AuthenticatedActor> {
+    let payload: AccessTokenPayload;
+    try {
+      payload = await this.jwt.verifyAsync<AccessTokenPayload>(accessToken, {
+        secret: this.requiredSecret('JWT_ACCESS_SECRET'),
+        issuer: 'goye-api',
+        audience: 'goye-client',
+      });
+    } catch {
+      throw new UnauthorizedException('Access token is invalid or expired.');
+    }
+
+    const actor = await this.database.withActor(this.systemActor(), async (client) => {
+      const result = await client.query<{
+        id: string;
+        home_unit_id: string | null;
+        home_path: string | null;
+        roles: string[];
+      }>(
+        `SELECT u.id, u.home_unit_id, h.path::text AS home_path,
+                COALESCE((
+                  SELECT array_agg(role_lookup.key ORDER BY role_lookup.key)
+                  FROM user_roles role_assignment
+                  JOIN roles role_lookup ON role_lookup.id = role_assignment.role_id
+                  WHERE role_assignment.user_id = u.id
+                ), ARRAY[]::text[]) AS roles
+         FROM sessions s
+         JOIN users u ON u.id = s.user_id
+         LEFT JOIN org_units h ON h.id = u.home_unit_id
+         WHERE s.id = $1 AND s.user_id = $2
+           AND s.status = 'ACTIVE' AND s.expires_at > now() AND u.status = 'ACTIVE'`,
+        [payload.sid, payload.sub],
+      );
+      return result.rows[0];
+    });
+    if (!actor) {
+      throw new UnauthorizedException('Session is no longer active.');
+    }
+
+    return {
+      id: actor.id,
+      sessionId: payload.sid,
+      roles: actor.roles,
+      ...(actor.home_unit_id ? { homeUnitId: actor.home_unit_id } : {}),
+      ...(actor.home_path ? { homePath: actor.home_path } : {}),
+      isGlobalAdmin: actor.roles.includes('GLOBAL_ADMIN'),
+    };
   }
 
   async logout(sessionId: string, userId: string): Promise<void> {
