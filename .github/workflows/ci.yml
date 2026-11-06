@@ -159,7 +159,7 @@ jobs:
       - name: Generate Windows runner project
         working-directory: app
         shell: pwsh
-        run: flutter create --platforms=windows --project-name goye --org org.rccg .
+        run: ./tool/bootstrap_windows.ps1
       - name: Fetch Flutter packages
         working-directory: app
         shell: pwsh

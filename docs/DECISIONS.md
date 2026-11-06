@@ -216,3 +216,12 @@ The recorded Phase 2 run used `embedded-postgres` as a single local PostgreSQL p
 `tenant_settings.mask_phone_numbers_above_parish` is a singleton database setting, defaulting to `false` as required. Only a Global Admin may change it through the authenticated privacy settings API; the change is tamper-evidently audited and takes effect on subsequent requests without a client release.
 
 When enabled, the API preserves only the final four digits (`***0044`) in phone fields returned to Global and all non-Parish hierarchy homes. The setting is applied inside the same database transaction by both standard convert serializers and Global Admin Country-to-Convert drill-down serialization; Parish-home reads remain unmasked. It does not modify encrypted data at rest, duplicate lookup hashes or consent records.
+
+## ADR-023 — One API base URL and client brand boundary
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+The Flutter client receives `API_BASE_URL` through a compile-time `--dart-define`; no client uses a platform-specific database or service. Android and Windows must be launched with URLs resolving to the same Go-Ye NestJS API, which remains the sole gateway to the shared PostgreSQL database.
+
+The copied `app/assets/branding/logo.jpg` is derived only from the approved RCCG `assets/logo.jpg` and is used for the in-app logo/restoring splash, Android launcher rendering and Windows `goye.ico`. `infoflex-logo.png`, copied from `assets/logo-source.png`, is displayed only in the About/Built by dialog.

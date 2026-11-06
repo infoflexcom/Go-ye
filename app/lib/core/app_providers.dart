@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'api_client.dart';
@@ -16,3 +17,5 @@ final apiClientProvider = Provider<ApiClient>((Ref ref) {
     sessionStore: ref.watch(sessionStoreProvider),
   );
 });
+
+final themeModeProvider = StateProvider<ThemeMode>((Ref ref) => ThemeMode.system);

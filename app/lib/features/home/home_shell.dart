@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_providers.dart';
+import '../../core/branding.dart';
 import '../../core/models.dart';
 import '../auth/auth_controller.dart';
 
@@ -23,8 +25,29 @@ class HomeShell extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Go-Ye'),
+        title: const Row(
+          children: <Widget>[GoYeLogo(size: 34), SizedBox(width: 10), Text('Go-Ye')],
+        ),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'Toggle dark mode',
+            onPressed: () {
+              final current = ref.read(themeModeProvider);
+              ref.read(themeModeProvider.notifier).state =
+                  current == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+            },
+            icon: Icon(
+              ref.watch(themeModeProvider) == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
+          ),
+          IconButton(
+            tooltip: 'About Go-Ye',
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => const AboutGoYeDialog(),
+            ),
+            icon: const Icon(Icons.info_outline),
+          ),
           IconButton(
             tooltip: 'Sign out',
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),

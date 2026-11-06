@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:goye/core/branding.dart';
 import 'package:goye/core/api_client.dart';
 import 'package:goye/core/app_providers.dart';
 import 'package:goye/core/session_store.dart';
@@ -28,5 +30,13 @@ void main() {
 
     expect(find.text('Welcome to Go-Ye'), findsOneWidget);
     expect(find.text('Send sign-in code'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+  });
+
+  testWidgets('uses INFOFLEX only in the About dialog', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AboutGoYeDialog()));
+
+    expect(find.text('Built by'), findsOneWidget);
+    expect(find.byType(Image), findsNWidgets(2));
   });
 }

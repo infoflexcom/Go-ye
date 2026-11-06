@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/app_providers.dart';
+import 'core/branding.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/home_shell.dart';
@@ -15,14 +17,21 @@ class GoYeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0C5C35),
+    final themeMode = ref.watch(themeModeProvider);
+    final lightScheme = ColorScheme.fromSeed(
+      seedColor: GoYeBrand.green,
       brightness: Brightness.light,
+    );
+    final darkScheme = ColorScheme.fromSeed(
+      seedColor: GoYeBrand.green,
+      brightness: Brightness.dark,
     );
     return MaterialApp(
       title: 'Go-Ye',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: colorScheme, useMaterial3: true),
+      themeMode: themeMode,
+      theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
+      darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
       home: switch (auth.status) {
         AuthStatus.restoring => const _RestoringSessionScreen(),
         AuthStatus.signedIn when auth.session != null => HomeShell(session: auth.session!),
@@ -37,6 +46,13 @@ class _RestoringSessionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[GoYeLogo(size: 96), SizedBox(height: 24), CircularProgressIndicator()],
+        ),
+      ),
+    );
   }
 }

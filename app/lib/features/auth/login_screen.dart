@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/branding.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -41,12 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      Icon(
-                        Icons.volunteer_activism_outlined,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.primary,
-                        semanticLabel: 'Go-Ye',
-                      ),
+                      const GoYeLogo(size: 72),
                       const SizedBox(height: 20),
                       Text(
                         'Welcome to Go-Ye',
