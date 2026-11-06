@@ -5,9 +5,22 @@
 
 ## Current gate
 
-**Phase 2 — convert lifecycle and reporting: COMPLETE (`phase-2-complete`). Phase 1 remains tagged `phase-1-complete`.**
+**Phase 3 — first shared Android/Windows client: IN PROGRESS. Phase 2 is tagged `phase-2-complete`.**
 
-Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reporting and privacy workflows. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. Phone and Windows clients are configured with the same `API_BASE_URL`, so authorised records are read from and written to the same server database. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+
+## Phase 3 task record
+
+- [x] **3.1 OTP login, secure storage and role-aware navigation:** approved-identity OTP request/verification is wired to the existing API; access/refresh material and a stable device identifier use platform secure storage only, refresh is handled on authenticated API calls, and navigation is role-gated.
+- [ ] **3.2 Brand, theme and dark mode**
+- [ ] **3.3 English/Yoruba localisation**
+- [ ] **3.4 Hierarchy browser and Global Admin country selector**
+- [ ] **3.5 Online New Decision, converts and Unassigned Pool**
+- [ ] **3.6 Scoped counts**
+- [ ] **3.7 Phone and desktop adaptive layouts**
+- [ ] **3.8 Android/Windows same-server run and client test gate**
+
+> Client code has widget/API-contract tests. Flutter, Android and Windows tooling are not installed in this Linux workspace, so the Flutter analysis/test/device-run commands are documented and CI-ready but cannot yet be truthfully marked as locally executed.
 
 ## Phase 2 task record
 
@@ -62,6 +75,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - Added audit coverage for above-Parish detail, duplicate-candidate, timeline and Unassigned Pool reads; Privacy Officer/Global Admin resolution and above-parish reads retain no PII in audit metadata.
 - Added a guarded Admin roll-up load-test runner and completed an isolated genuine PostgreSQL one-million-convert run. All four measured Global Admin summary operations met the under-one-second P95 target; exact methodology and numbers are in `docs/LOAD_TEST_RESULTS.md`.
 - Added a database-backed `mask_phone_numbers_above_parish` tenant setting, defaulting to OFF. Global Admin can change it via the authenticated privacy settings API; serializers mask above-Parish detail and report phones at request time, with tests covering default, toggle, Parish exception and report drill-down enforcement.
+- Started the Phase 3 Flutter client: secure OTP sign-in, OS-keystore session/device storage, rotated-token refresh and role-aware workspace navigation all use the existing single API base URL.
 - Extended genuine PostgreSQL and authenticated HTTP coverage to prove country/Region/grand totals, merged-record exclusion, filters, pagination, Global Admin-only access and drill-down audit creation.
 - Added audited Global Admin hierarchy/user/role APIs and atomic descendant-path rebuilding moves.
 - Added guarded Nigeria/Ghana sample seed data plus validated CSV/XLSX/XLSM hierarchy import/dry-run tooling.
