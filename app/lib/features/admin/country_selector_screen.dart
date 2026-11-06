@@ -68,26 +68,19 @@ class _RegionTotals extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<List<SummaryTotal>>(
-      future: ref.watch(adminReportsRepositoryProvider).listRegions(country.id),
-      builder: (BuildContext context, AsyncSnapshot<List<SummaryTotal>> snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
-        }
-        if (snapshot.hasError) {
-          return const Text('Could not load regions.');
-        }
-        final regions = snapshot.data ?? const <SummaryTotal>[];
-        return Card(
-          child: Column(
-            children: <Widget>[
-              ListTile(title: Text('${country.name} regions'), trailing: _TotalChip(total: country.total)),
-              for (final region in regions)
-                ListTile(title: Text(region.name), subtitle: Text(region.code), trailing: _TotalChip(total: region.total)),
-            ],
-          ),
-        );
-      },
+    final regions = ref.watch(regionTotalsProvider(country.id));
+    return regions.when(
+      loading: () => const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+      error: (Object error, StackTrace stackTrace) => const Text('Could not load regions.'),
+      data: (List<SummaryTotal> values) => Card(
+        child: Column(
+          children: <Widget>[
+            ListTile(title: Text('${country.name} regions'), trailing: _TotalChip(total: country.total)),
+            for (final region in values)
+              ListTile(title: Text(region.name), subtitle: Text(region.code), trailing: _TotalChip(total: region.total)),
+          ],
+        ),
+      ),
     );
   }
 }

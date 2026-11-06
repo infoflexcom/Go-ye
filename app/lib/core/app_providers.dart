@@ -89,3 +89,11 @@ final scopedCountProvider = FutureProvider.autoDispose.family<ScopedCount?, Sess
   }
   return home == null ? null : reports.countForUnit(home);
 });
+
+final regionTotalsProvider = FutureProvider.autoDispose.family<List<SummaryTotal>, String>((Ref ref, String countryId) {
+  return ref.watch(adminReportsRepositoryProvider).listRegions(countryId);
+});
+
+final convertDetailProvider = FutureProvider.autoDispose.family<ConvertRecord, String>((Ref ref, String convertId) {
+  return ref.watch(convertsRepositoryProvider).get(convertId);
+});

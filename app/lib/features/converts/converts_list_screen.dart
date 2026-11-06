@@ -121,28 +121,20 @@ class ConvertDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.text('convertDetail'))),
-      body: FutureBuilder<ConvertRecord>(
-        future: ref.watch(convertsRepositoryProvider).get(convertId),
-        builder: (BuildContext context, AsyncSnapshot<ConvertRecord> snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text(context.l10n.text('convertLoadError')));
-          }
-          final convert = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              Text(convert.fullName, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              _DetailRow(label: context.l10n.text('stage'), value: convert.stage.replaceAll('_', ' ')),
-              _DetailRow(label: context.l10n.text('phone'), value: convert.phone ?? '—'),
-              _DetailRow(label: context.l10n.text('address'), value: convert.address ?? '—'),
-              _DetailRow(label: context.l10n.text('parish'), value: convert.parishId ?? context.l10n.text('notAssigned')),
-            ],
-          );
-        },
+      body: ref.watch(convertDetailProvider(convertId)).when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (Object error, StackTrace stackTrace) => Center(child: Text(context.l10n.text('convertLoadError'))),
+        data: (ConvertRecord convert) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            Text(convert.fullName, style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            _DetailRow(label: context.l10n.text('stage'), value: convert.stage.replaceAll('_', ' ')),
+            _DetailRow(label: context.l10n.text('phone'), value: convert.phone ?? '—'),
+            _DetailRow(label: context.l10n.text('address'), value: convert.address ?? '—'),
+            _DetailRow(label: context.l10n.text('parish'), value: convert.parishId ?? context.l10n.text('notAssigned')),
+          ],
+        ),
       ),
     );
   }

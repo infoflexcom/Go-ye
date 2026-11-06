@@ -303,6 +303,20 @@ describe('permission test matrix (HTTP + RLS)', () => {
       .get('/api/v1/admin/reports/grand-total')
       .set('Authorization', bearer('Country Lead'))
       .expect(403);
+
+    const scopedConvertList = await request(httpServer())
+      .get('/api/v1/converts?offset=0&limit=1')
+      .set('Authorization', bearer('Country Lead'))
+      .expect(200);
+    expect(scopedConvertList.body).toMatchObject({
+      total: 1,
+      items: [expect.objectContaining({ id: reportConvertId, fullName: 'HTTP Reporting Convert' })],
+    });
+    await request(httpServer())
+      .get('/api/v1/converts?limit=101')
+      .set('Authorization', bearer('Country Lead'))
+      .expect(400);
+
     await request(httpServer())
       .get('/api/v1/privacy/settings/phone-masking')
       .set('Authorization', bearer('Global Admin'))

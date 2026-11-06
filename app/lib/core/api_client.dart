@@ -36,7 +36,10 @@ class ApiClient {
   }
 
   Future<List<Map<String, Object?>>> getList(String path, {Map<String, String>? query}) async {
-    final response = await _rawRequest('GET', path, query: query, authenticated: true);
+    var response = await _rawRequest('GET', path, query: query, authenticated: true);
+    if (response.statusCode == 401 && await _refreshSession()) {
+      response = await _rawRequest('GET', path, query: query, authenticated: true);
+    }
     return _decodeListResponse(response);
   }
 
