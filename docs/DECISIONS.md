@@ -198,3 +198,12 @@ A permitted scoped worker may lodge a removal request with an optional AES-GCM-e
 The destructive resolution is an irreversible field-level anonymisation rather than physical-row deletion, because the immutable consent, timeline, follow-up and tamper-evident audit relations must remain referentially sound. It overwrites the encrypted name with a non-identifying placeholder, clears encrypted phone/address and the duplicate lookup hash, cancels pending follow-up and removes the individual from active roll-ups. No removed PII is carried in audit metadata.
 
 Every read that returns detailed convert information to an actor above a Parish home unit now appends an audit event in the same transaction: individual detail, duplicate-candidate results, timeline and Unassigned Pool reads, as well as the Global Admin drill-down. Parish-equivalent reads are not multiplied into the above-Parish audit stream.
+
+## ADR-021 — Admin roll-up load test method and result boundary
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+The Admin reporting load test creates a fresh, isolated PostgreSQL hierarchy and refuses a database containing any converts. It seeds converts in bounded batches through the real `converts` table and its `convert_rollup_daily` maintenance trigger, then verifies Country totals, selected-country Region totals and the grand total before measuring the real Global Admin report service after three warm-up calls.
+
+The recorded Phase 2 run used `embedded-postgres` as a single local PostgreSQL process and one million synthetic rows. The all-country, Region, selected-country and grand-summary p95 measurements (3.50ms, 5.96ms, 3.51ms and 3.56ms respectively) meet the under-one-second target in that controlled setup. This is not a production latency commitment: managed PostgreSQL version, storage, network, connection pooling, concurrent load and proxy/TLS overhead must be measured again before declaring an operational SLO. The full method and command are retained in `docs/LOAD_TEST_RESULTS.md`.

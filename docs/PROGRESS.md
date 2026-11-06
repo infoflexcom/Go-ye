@@ -18,7 +18,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - [x] **2.5 Hierarchy roll-ups and summaries:** trigger-maintained daily current-stage summaries attribute each active convert to its parish when assigned (otherwise registration unit) and every ancestor exactly once; genuine PostgreSQL seeded-data tests prove Parish through Country counts and merged-record exclusion.
 - [x] **2.6 Global Admin reporting/drill-down:** authenticated Global Admin-only country list, selected-country Region totals, country and grand totals, plus encrypted Country-to-Convert drill-down are backed by roll-up summaries or indexed hierarchy queries. Registration-date/current-stage filters and drill-down pagination are validated through genuine PostgreSQL service and authenticated HTTP tests; every drill-down is tamper-evidently audited.
 - [x] **2.7 Removal requests and above-parish read audit:** a scoped worker can submit an encrypted-reason removal request that immediately quarantines the convert from routine detail access, tasks, drill-down and roll-ups. A scoped Privacy Officer (or Global Admin acting in the privacy workflow) can reject or irreversibly anonymise it; encrypted PII/lookup data are removed, pending follow-up is cancelled and all request/resolution and above-parish detail reads are tamper-evidently audited.
-- [ ] **2.8 One-million-convert load verification**
+- [x] **2.8 One-million-convert load verification:** the isolated genuine PostgreSQL run seeded 1,000,000 synthetic converts in 14m 48.97s, reconciled Country/Region/grand totals, and measured 20 warm local Global Admin summary samples per operation. P95 ranged from 3.50ms to 5.96ms, below the one-second target; see `docs/LOAD_TEST_RESULTS.md`.
 
 ## Phase 1 task record
 
@@ -60,6 +60,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 - Added stage and registration-date filters to each Global Admin report, used current-stage roll-up summaries for totals, and audited every above-parish convert drill-down read without PII in the audit metadata.
 - Added a removal-request privacy workflow with database-enforced request quarantine, authorised reject/anonymise resolution, cancellation of pending follow-up, encrypted request/resolution notes and roll-up removal/reinstatement rules.
 - Added audit coverage for above-Parish detail, duplicate-candidate, timeline and Unassigned Pool reads; Privacy Officer/Global Admin resolution and above-parish reads retain no PII in audit metadata.
+- Added a guarded Admin roll-up load-test runner and completed an isolated genuine PostgreSQL one-million-convert run. All four measured Global Admin summary operations met the under-one-second P95 target; exact methodology and numbers are in `docs/LOAD_TEST_RESULTS.md`.
 - Extended genuine PostgreSQL and authenticated HTTP coverage to prove country/Region/grand totals, merged-record exclusion, filters, pagination, Global Admin-only access and drill-down audit creation.
 - Added audited Global Admin hierarchy/user/role APIs and atomic descendant-path rebuilding moves.
 - Added guarded Nigeria/Ghana sample seed data plus validated CSV/XLSX/XLSM hierarchy import/dry-run tooling.
@@ -68,22 +69,22 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 
 ## Validation record
 
-| Check                                                        | Result                                                                                                                                    |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run backend:format:check`                               | Passed                                                                                                                                    |
-| `npm run backend:lint`                                       | Passed                                                                                                                                    |
-| `npm run backend:test`                                       | Passed — 10 files, 36 tests (including authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL roll-up coverage)  |
-| `npm run backend:build`                                      | Passed                                                                                                                                    |
-| `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                  |
-| `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                    |
-| `npx prettier --check .`                                     | Passed                                                                                                                                    |
-| `git diff --check`                                           | Passed                                                                                                                                    |
-| Local compiled API `GET /api/v1/hello`                       | Passed — returned documented response                                                                                                     |
-| Local compiled API `GET /api/v1/health`                      | Passed — API healthy; database intentionally not configured outside Compose                                                               |
-| Supplied asset copy SHA-256 comparison                       | Passed — four source/copy pairs match                                                                                                     |
-| `npm --workspace=@goye/backend run test:coverage`            | Passed — auth/authorization: 86.29% statements, 84.21% functions, 86.22% lines (all ≥80%)                                                 |
-| Live compiled Swagger smoke                                  | Passed — `/api/docs` returned 200; `/api/docs-json` returned OpenAPI 3.0.0, 15 paths and bearer security                                  |
-| Docker Compose / Flutter / Android emulator / Windows launch | Not runnable in this workspace; CI configuration is present, but remote Actions dispatch is currently not authorised for this integration |
+| Check                                                        | Result                                                                                                                                        |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run backend:format:check`                               | Passed                                                                                                                                        |
+| `npm run backend:lint`                                       | Passed                                                                                                                                        |
+| `npm run backend:test`                                       | Passed — 11 files, 37 tests (including load-runner, authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL coverage) |
+| `npm run backend:build`                                      | Passed                                                                                                                                        |
+| `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                      |
+| `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                        |
+| `npx prettier --check .`                                     | Passed                                                                                                                                        |
+| `git diff --check`                                           | Passed                                                                                                                                        |
+| Local compiled API `GET /api/v1/hello`                       | Passed — returned documented response                                                                                                         |
+| Local compiled API `GET /api/v1/health`                      | Passed — API healthy; database intentionally not configured outside Compose                                                                   |
+| Supplied asset copy SHA-256 comparison                       | Passed — four source/copy pairs match                                                                                                         |
+| `npm --workspace=@goye/backend run test:coverage`            | Passed — auth/authorization: 86.29% statements, 84.21% functions, 86.22% lines (all ≥80%)                                                     |
+| Live compiled Swagger smoke                                  | Passed — `/api/docs` returned 200; `/api/docs-json` returned OpenAPI 3.0.0, 15 paths and bearer security                                      |
+| Docker Compose / Flutter / Android emulator / Windows launch | Not runnable in this workspace; CI configuration is present, but remote Actions dispatch is currently not authorised for this integration     |
 
 ## Sponsor confirmations received
 
@@ -106,7 +107,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 
 - `npm audit --omit=dev --audit-level=high` passes, but reports **two moderate production advisories** through `exceljs@4.4.0` → `uuid@8.3.2` (GHSA-w5hq-g745-h8pq). `npm audit fix --force` proposes a breaking downgrade to `exceljs@3.4.0`; it was not applied blindly. Before production deployment, replace or upgrade the spreadsheet library after compatibility/security review, then rerun import tests and the audit.
 - Full development dependency audit also has tooling advisories; production runtime is gated on the production-only high/critical scan above. CI and release governance must continue to review fresh audit output.
-- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds and real convert records remain excluded from this development repository. Phase 2 still needs Task 2.8 (the one-million-convert load verification) before its completion gate.
+- Actual church hierarchy data, cloud deployment, provider credentials, mobile/desktop builds and real convert records remain excluded from this development repository. All numbered Phase 2 tasks are implemented. The required server-enforced `mask_phone_numbers_above_parish` setting remains to be verified before creating `phase-2-complete`.
 
 ## Known platform constraints
 

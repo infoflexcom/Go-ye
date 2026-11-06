@@ -19,6 +19,7 @@
     "migration:down": "tsx src/database/migrate.ts down",
     "seed:sample": "tsx src/scripts/seed-sample-hierarchy.ts",
     "hierarchy:import": "tsx src/scripts/import-hierarchy.ts",
+    "load-test:admin-rollups": "tsx src/scripts/load-test-admin-rollups.ts",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
