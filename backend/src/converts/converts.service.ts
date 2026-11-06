@@ -216,6 +216,38 @@ export class ConvertsService {
     });
   }
 
+  async list(
+    actor: AuthenticatedActor,
+    options: { offset?: number; limit?: number },
+  ): Promise<{ total: number; items: ConvertRecord[] }> {
+    this.assertConvertWorker(actor);
+    const offset = options.offset ?? 0;
+    const limit = options.limit ?? 50;
+    return this.withConvertActor(actor, async (client) => {
+      const count = await client.query<{ total: string }>(
+        `SELECT count(*)::text AS total
+         FROM converts
+         WHERE merged_into_id IS NULL AND privacy_status = 'ACTIVE'`,
+      );
+      const result = await client.query<ConvertDatabaseRow>(
+        `SELECT ${this.convertColumns()} FROM converts
+         WHERE merged_into_id IS NULL AND privacy_status = 'ACTIVE'
+         ORDER BY created_at DESC, id DESC
+         OFFSET $1 LIMIT $2`,
+        [offset, limit],
+      );
+      await this.auditAboveParishRead(client, actor, 'CONVERT_LIST_READ_ABOVE_PARISH', {
+        scopeUnitId: actor.homeUnitId,
+        metadata: { offset, limit, total: Number(count.rows[0].total) },
+      });
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
+      return {
+        total: Number(count.rows[0].total),
+        items: result.rows.map((row) => this.toRecord(row, maskPhone)),
+      };
+    });
+  }
+
   async detectDuplicates(
     actor: AuthenticatedActor,
     dto: DetectDuplicateDto,

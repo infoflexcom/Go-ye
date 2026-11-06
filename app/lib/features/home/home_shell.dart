@@ -8,8 +8,11 @@ import '../../l10n/app_localizations.dart';
 import '../admin/country_selector_screen.dart';
 import '../auth/auth_controller.dart';
 import '../directory/hierarchy_browser_screen.dart';
+import '../converts/converts_list_screen.dart';
+import '../converts/new_decision_screen.dart';
+import '../converts/unassigned_pool_screen.dart';
 
-enum _WorkspaceDestination { dashboard, directory, countries }
+enum _WorkspaceDestination { dashboard, newDecision, converts, unassigned, directory, countries }
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({required this.session, super.key});
@@ -27,6 +30,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final destinations = <_WorkspaceDestination>[
       _WorkspaceDestination.dashboard,
+      if (_canRegisterConverts(widget.session)) _WorkspaceDestination.newDecision,
+      if (_canRegisterConverts(widget.session)) _WorkspaceDestination.converts,
+      if (_canUseUnassignedPool(widget.session)) _WorkspaceDestination.unassigned,
       _WorkspaceDestination.directory,
       if (widget.session.isGlobalAdmin) _WorkspaceDestination.countries,
     ];
@@ -73,6 +79,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ),
       body: switch (selected) {
         _WorkspaceDestination.dashboard => _DashboardWelcome(session: widget.session),
+        _WorkspaceDestination.newDecision => NewDecisionScreen(isGlobalAdmin: widget.session.isGlobalAdmin),
+        _WorkspaceDestination.converts => const ConvertsListScreen(),
+        _WorkspaceDestination.unassigned => const UnassignedPoolScreen(),
         _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
         _WorkspaceDestination.countries => const CountrySelectorScreen(),
       },
@@ -90,6 +99,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           icon: const Icon(Icons.dashboard_outlined),
           label: context.l10n.dashboard,
         ),
+      _WorkspaceDestination.newDecision => NavigationDestination(
+          icon: const Icon(Icons.person_add_alt_1_outlined),
+          label: context.l10n.newDecision,
+        ),
+      _WorkspaceDestination.converts => NavigationDestination(
+          icon: const Icon(Icons.people_outline),
+          label: context.l10n.converts,
+        ),
+      _WorkspaceDestination.unassigned => NavigationDestination(
+          icon: const Icon(Icons.assignment_late_outlined),
+          label: context.l10n.unassigned,
+        ),
       _WorkspaceDestination.directory => NavigationDestination(
           icon: const Icon(Icons.account_tree_outlined),
           label: context.l10n.text('hierarchy'),
@@ -99,6 +120,31 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           label: context.l10n.countries,
         ),
     };
+  }
+
+  bool _canRegisterConverts(Session session) {
+    const convertRoles = <String>{
+      'COUNTRY_ADMIN',
+      'REGION_LEADER',
+      'PROVINCE_LEADER',
+      'ZONE_LEADER',
+      'AREA_LEADER',
+      'PARISH_PASTOR',
+      'SOUL_WINNER',
+      'FOLLOW_UP_WORKER',
+    };
+    return session.isGlobalAdmin || session.roles.any(convertRoles.contains);
+  }
+
+  bool _canUseUnassignedPool(Session session) {
+    const poolRoles = <String>{
+      'COUNTRY_ADMIN',
+      'REGION_LEADER',
+      'PROVINCE_LEADER',
+      'ZONE_LEADER',
+      'AREA_LEADER',
+    };
+    return session.isGlobalAdmin || session.roles.any(poolRoles.contains);
   }
 }
 

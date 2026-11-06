@@ -5,6 +5,7 @@ import 'api_client.dart';
 import 'models.dart';
 import '../features/admin/admin_reports_repository.dart';
 import '../features/directory/directory_repository.dart';
+import '../features/converts/converts_repository.dart';
 import 'session_store.dart';
 
 const String configuredApiBaseUrl = String.fromEnvironment(
@@ -42,3 +43,15 @@ final countriesProvider = FutureProvider.autoDispose<List<SummaryTotal>>((Ref re
 });
 
 final selectedCountryProvider = StateProvider<SummaryTotal?>((Ref ref) => null);
+
+final convertsRepositoryProvider = Provider<ConvertsRepository>((Ref ref) {
+  return ConvertsRepository(ref.watch(apiClientProvider));
+});
+
+final convertsProvider = FutureProvider.autoDispose<ConvertPage>((Ref ref) {
+  return ref.watch(convertsRepositoryProvider).list();
+});
+
+final unassignedConvertsProvider = FutureProvider.autoDispose<List<UnassignedConvert>>((Ref ref) {
+  return ref.watch(convertsRepositoryProvider).listUnassigned();
+});

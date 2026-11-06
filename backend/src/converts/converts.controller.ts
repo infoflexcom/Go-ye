@@ -16,6 +16,7 @@ import { AdvanceConvertStageDto } from './dto/advance-convert-stage.dto.js';
 import { AssignConvertDto } from './dto/assign-convert.dto.js';
 import { DetectDuplicateDto } from './dto/detect-duplicate.dto.js';
 import { MergeConvertDto } from './dto/merge-convert.dto.js';
+import { ListConvertsDto } from './dto/list-converts.dto.js';
 import { CreateConvertDto } from './dto/create-convert.dto.js';
 import { UpdateConvertDto } from './dto/update-convert.dto.js';
 import { ConvertsService } from './converts.service.js';
@@ -38,6 +39,14 @@ export class ConvertsController {
   })
   create(@CurrentActor() actor: AuthenticatedActor, @Body() dto: CreateConvertDto) {
     return this.converts.create(actor, dto);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'List active converts visible within the authenticated hierarchy scope',
+  })
+  list(@CurrentActor() actor: AuthenticatedActor, @Query() query: ListConvertsDto) {
+    return this.converts.list(actor, query);
   }
 
   @Get(':id/timeline')

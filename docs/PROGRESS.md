@@ -15,7 +15,7 @@ Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. P
 - [x] **3.2 Brand, theme and dark mode:** RCCG `logo.jpg` drives in-app logo/restoring splash, Android launcher generation and a tracked Windows `.ico`; INFOFLEX is limited to About/Built by. Material light/dark themes follow the system and offer an explicit toggle.
 - [x] **3.3 English/Yoruba localisation:** locale delegate, switcher and key-complete English/Yoruba catalog cover the initial client workflow; adding another catalog entry does not require widget changes.
 - [x] **3.4 Hierarchy browser and Global Admin country selector:** hierarchy browser renders only the signed-in actor’s RLS-scoped directory response; Global Admin receives country totals, selection and selected-country Region totals from the existing reporting API.
-- [ ] **3.5 Online New Decision, converts and Unassigned Pool**
+- [x] **3.5 Online New Decision, converts and Unassigned Pool:** the consent-gated one-screen form creates against the shared API; role-scoped convert list/detail, Unassigned Pool ageing display and descendant-parish assignment are live. Added a bounded, RLS-scoped active-convert listing API with above-Parish audit coverage for the client list.
 - [ ] **3.6 Scoped counts**
 - [ ] **3.7 Phone and desktop adaptive layouts**
 - [ ] **3.8 Android/Windows same-server run and client test gate**
@@ -88,7 +88,7 @@ Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. P
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run backend:format:check`                               | Passed                                                                                                                                        |
 | `npm run backend:lint`                                       | Passed                                                                                                                                        |
-| `npm run backend:test`                                       | Passed — 11 files, 38 tests (including load-runner, authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL coverage) |
+| `npm run backend:test`                                       | Passed — 11 files, 39 tests (including load-runner, authenticated privacy workflow, Global Admin reporting, HTTP/RLS and PostgreSQL coverage) |
 | `npm run backend:build`                                      | Passed                                                                                                                                        |
 | `npm audit --omit=dev --audit-level=high`                    | Passed — no high/critical production findings; see known issues for 2 moderate `exceljs`/`uuid` findings                                      |
 | `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                        |

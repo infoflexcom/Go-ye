@@ -164,3 +164,100 @@ class SummaryTotal {
     );
   }
 }
+
+class ConvertRecord {
+  const ConvertRecord({
+    required this.id,
+    required this.fullName,
+    required this.phone,
+    required this.address,
+    required this.registeredAtUnitId,
+    required this.parishId,
+    required this.stage,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String fullName;
+  final String? phone;
+  final String? address;
+  final String registeredAtUnitId;
+  final String? parishId;
+  final String stage;
+  final DateTime? createdAt;
+
+  factory ConvertRecord.fromJson(Map<String, Object?> value) {
+    return ConvertRecord(
+      id: _requiredString(value, 'id'),
+      fullName: _requiredString(value, 'fullName'),
+      phone: value['phone'] is String ? value['phone'] as String : null,
+      address: value['address'] is String ? value['address'] as String : null,
+      registeredAtUnitId: _requiredString(value, 'registeredAtUnitId'),
+      parishId: value['parishId'] is String ? value['parishId'] as String : null,
+      stage: _requiredString(value, 'stage'),
+      createdAt: _date(value['createdAt']),
+    );
+  }
+}
+
+class ConvertPage {
+  const ConvertPage({required this.total, required this.items});
+
+  final int total;
+  final List<ConvertRecord> items;
+
+  factory ConvertPage.fromJson(Map<String, Object?> value) {
+    final rawItems = value['items'];
+    final rawTotal = value['total'];
+    if (rawItems is! List) {
+      throw const FormatException('The server response did not contain convert items.');
+    }
+    return ConvertPage(
+      total: rawTotal is num ? rawTotal.toInt() : 0,
+      items: rawItems
+          .whereType<Map>()
+          .map((Map<Object?, Object?> item) => ConvertRecord.fromJson(
+                item.map<String, Object?>((Object? key, Object? itemValue) {
+                  return MapEntry<String, Object?>(key.toString(), itemValue);
+                }),
+              ))
+          .toList(growable: false),
+    );
+  }
+}
+
+class UnassignedConvert extends ConvertRecord {
+  const UnassignedConvert({
+    required super.id,
+    required super.fullName,
+    required super.phone,
+    required super.address,
+    required super.registeredAtUnitId,
+    required super.parishId,
+    required super.stage,
+    required super.createdAt,
+    required this.unassignedAgeDays,
+  });
+
+  final int unassignedAgeDays;
+
+  factory UnassignedConvert.fromJson(Map<String, Object?> value) {
+    final base = ConvertRecord.fromJson(value);
+    final rawAge = value['unassignedAgeDays'];
+    return UnassignedConvert(
+      id: base.id,
+      fullName: base.fullName,
+      phone: base.phone,
+      address: base.address,
+      registeredAtUnitId: base.registeredAtUnitId,
+      parishId: base.parishId,
+      stage: base.stage,
+      createdAt: base.createdAt,
+      unassignedAgeDays: rawAge is num ? rawAge.toInt() : 0,
+    );
+  }
+}
+
+DateTime? _date(Object? rawValue) {
+  return rawValue is String ? DateTime.tryParse(rawValue)?.toLocal() : null;
+}

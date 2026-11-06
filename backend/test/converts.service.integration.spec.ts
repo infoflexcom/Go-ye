@@ -507,6 +507,24 @@ describe('ConvertsService', () => {
     expect(afterRejection.rows[0].total).toBe(beforeRequest.rows[0].total);
   });
 
+  it('lists only RLS-visible active converts with bounded pagination', async () => {
+    const visible = await converts.create(parishActor, {
+      fullName: 'Listed Parish Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const page = await converts.list(parishActor, { offset: 0, limit: 100 });
+
+    expect(page.total).toBeGreaterThanOrEqual(1);
+    expect(page.items.length).toBeGreaterThanOrEqual(1);
+    expect(page.items.some((item) => item.id === visible.id)).toBe(true);
+    const audit = await testDatabase.pool.query<{ action: string }>(
+      `SELECT action FROM audit_log
+       WHERE action = 'CONVERT_LIST_READ_ABOVE_PARISH' AND actor_user_id = $1`,
+      [parishActor.id],
+    );
+    expect(audit.rows).toEqual([]);
+  });
+
   it('masks phone numbers for above-Parish reads when the Global Admin switches the server setting', async () => {
     const convert = await converts.create(parishActor, {
       fullName: 'Phone Mask Convert',
