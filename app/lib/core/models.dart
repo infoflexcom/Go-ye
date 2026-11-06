@@ -261,3 +261,29 @@ class UnassignedConvert extends ConvertRecord {
 DateTime? _date(Object? rawValue) {
   return rawValue is String ? DateTime.tryParse(rawValue)?.toLocal() : null;
 }
+
+class ScopedCount {
+  const ScopedCount({required this.total, required this.byStage, this.scopeName});
+
+  final int total;
+  final Map<String, int> byStage;
+  final String? scopeName;
+
+  factory ScopedCount.fromJson(Map<String, Object?> value, {String? scopeName}) {
+    final rawStages = value['byStage'];
+    final stages = <String, int>{};
+    if (rawStages is Map) {
+      rawStages.forEach((Object? key, Object? count) {
+        if (count is num) {
+          stages[key.toString()] = count.toInt();
+        }
+      });
+    }
+    final rawTotal = value['total'];
+    return ScopedCount(
+      total: rawTotal is num ? rawTotal.toInt() : 0,
+      byStage: stages,
+      scopeName: scopeName,
+    );
+  }
+}

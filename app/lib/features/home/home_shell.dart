@@ -148,31 +148,91 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 }
 
-class _DashboardWelcome extends StatelessWidget {
+class _DashboardWelcome extends ConsumerWidget {
   const _DashboardWelcome({required this.session});
 
   final Session session;
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(scopedCountProvider(session));
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: <Widget>[
+        const Icon(Icons.verified_user_outlined, size: 56),
+        const SizedBox(height: 16),
+        Text(
+          context.l10n.signedInSecurely,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          session.roles.isEmpty ? context.l10n.noActiveRole : session.roles.join(' · '),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        count.when(
+          loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+          error: (Object error, StackTrace stackTrace) => _CountUnavailable(message: context.l10n.text('countUnavailable')),
+          data: (ScopedCount? value) => value == null
+              ? _CountUnavailable(message: context.l10n.text('countUnavailable'))
+              : _CountCard(count: value),
+        ),
+      ],
+    );
+  }
+}
+
+class _CountCard extends StatelessWidget {
+  const _CountCard({required this.count});
+
+  final ScopedCount count;
+
+  @override
   Widget build(BuildContext context) {
-    return Center(
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Icon(Icons.verified_user_outlined, size: 56),
-            const SizedBox(height: 16),
-            Text(context.l10n.signedInSecurely, style: Theme.of(context).textTheme.headlineSmall),
+            Text(count.scopeName ?? context.l10n.text('yourScope'), style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(
-              session.roles.isEmpty ? context.l10n.noActiveRole : session.roles.join(' · '),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(context.l10n.workspaceReady),
+            Text('${count.total}', style: Theme.of(context).textTheme.displaySmall),
+            Text(context.l10n.text('activeConverts')),
+            if (count.byStage.isNotEmpty) ...<Widget>[
+              const Divider(height: 32),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: count.byStage.entries
+                    .map(
+                      (MapEntry<String, int> entry) => Chip(
+                        label: Text('${entry.key.replaceAll('_', ' ')} · ${entry.value}'),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CountUnavailable extends StatelessWidget {
+  const _CountUnavailable({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(message, textAlign: TextAlign.center),
       ),
     );
   }

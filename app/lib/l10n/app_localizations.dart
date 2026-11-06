@@ -112,6 +112,9 @@ class AppLocalizations {
       'assignedTo': 'was assigned to',
       'assignToParish': 'Assign to parish',
       'noParishAvailable': 'No eligible parish is available in your scope.',
+      'countUnavailable': 'Counts are not available for this active role.',
+      'yourScope': 'Your scope',
+      'activeConverts': 'active converts',
     },
     'yo': <String, String>{
       'appName': 'Go-Ye',
@@ -173,6 +176,9 @@ class AppLocalizations {
       'assignedTo': 'ti pín sí',
       'assignToParish': 'Pín sí páríṣì',
       'noParishAvailable': 'Kò sí páríṣì tí ó yẹ nínú ìwọ̀n rẹ.',
+      'countUnavailable': 'Àwọn iye kò wà fún ipa tí ó ń ṣiṣẹ́ yìí.',
+      'yourScope': 'Ìwọ̀n rẹ',
+      'activeConverts': 'àwọn olùyípadà tí ń ṣiṣẹ́',
     },
   };
 }

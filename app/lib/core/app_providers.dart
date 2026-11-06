@@ -6,6 +6,7 @@ import 'models.dart';
 import '../features/admin/admin_reports_repository.dart';
 import '../features/directory/directory_repository.dart';
 import '../features/converts/converts_repository.dart';
+import '../features/reports/reports_repository.dart';
 import 'session_store.dart';
 
 const String configuredApiBaseUrl = String.fromEnvironment(
@@ -54,4 +55,37 @@ final convertsProvider = FutureProvider.autoDispose<ConvertPage>((Ref ref) {
 
 final unassignedConvertsProvider = FutureProvider.autoDispose<List<UnassignedConvert>>((Ref ref) {
   return ref.watch(convertsRepositoryProvider).listUnassigned();
+});
+
+final reportsRepositoryProvider = Provider<ReportsRepository>((Ref ref) {
+  return ReportsRepository(ref.watch(apiClientProvider));
+});
+
+final scopedCountProvider = FutureProvider.autoDispose.family<ScopedCount?, Session>((Ref ref, Session session) async {
+  final reports = ref.watch(reportsRepositoryProvider);
+  if (session.isGlobalAdmin) {
+    return reports.grandTotal();
+  }
+  const reportingRoles = <String>{
+    'COUNTRY_ADMIN',
+    'REGION_LEADER',
+    'PROVINCE_LEADER',
+    'ZONE_LEADER',
+    'AREA_LEADER',
+    'PARISH_PASTOR',
+    'SOUL_WINNER',
+    'FOLLOW_UP_WORKER',
+  };
+  if (session.homePath == null || !session.roles.any(reportingRoles.contains)) {
+    return null;
+  }
+  final units = await ref.watch(directoryRepositoryProvider).listUnits();
+  OrgUnit? home;
+  for (final unit in units) {
+    if (unit.path == session.homePath) {
+      home = unit;
+      break;
+    }
+  }
+  return home == null ? null : reports.countForUnit(home);
 });
