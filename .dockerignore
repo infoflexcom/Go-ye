@@ -1,0 +1,15 @@
+.git
+.github
+.husky
+node_modules
+backend/node_modules
+app/.dart_tool
+app/build
+coverage
+.env
+*.log
+*.apk
+*.aab
+*.ipa
+*.exe
+*.msi

@@ -1,0 +1,177 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_ios_build:
+        description: 'Run the unsigned iOS scaffold build on macOS'
+        required: false
+        type: boolean
+        default: false
+      run_windows_build:
+        description: 'Run the Windows scaffold build on Windows'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend quality and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Scan production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - run: npm run backend:format:check
+      - run: npm run backend:lint
+      - run: npm run backend:test
+      - run: npm run backend:build
+      - run: npm run validate:foundation
+
+  compose-smoke:
+    name: Docker Compose API smoke test
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare local-only Compose environment
+        run: cp .env.example .env
+      - name: Start API and PostgreSQL
+        run: docker compose up --build --wait
+      - name: Verify hello API response
+        run: |
+          curl --fail --show-error http://localhost:3000/api/v1/hello
+          curl --fail --show-error http://localhost:3000/api/v1/health
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Tear down stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  flutter-tests:
+    name: Flutter format, analysis and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate native runner projects
+        working-directory: app
+        run: ./tool/bootstrap_platforms.sh
+      - name: Fetch Flutter packages
+        working-directory: app
+        run: flutter pub get
+      - name: Check Dart formatting
+        working-directory: app
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyse Dart
+        working-directory: app
+        run: flutter analyze
+      - name: Run Flutter tests
+        working-directory: app
+        run: flutter test
+
+  android-debug-build:
+    name: Android debug build
+    needs: flutter-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate native runner projects
+        working-directory: app
+        run: ./tool/bootstrap_platforms.sh
+      - name: Fetch Flutter packages
+        working-directory: app
+        run: flutter pub get
+      - name: Build test APK
+        working-directory: app
+        run: flutter build apk --debug
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: goye-android-debug-apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios-scaffold:
+    name: iOS unsigned scaffold build
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_ios_build == true
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate iOS runner project
+        working-directory: app
+        run: flutter create --platforms=ios --project-name goye --org org.rccg .
+      - name: Fetch Flutter packages
+        working-directory: app
+        run: flutter pub get
+      - name: Build unsigned iOS scaffold
+        working-directory: app
+        run: flutter build ios --no-codesign
+
+  windows-scaffold:
+    name: Windows scaffold build
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_windows_build == true
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Windows runner project
+        working-directory: app
+        shell: pwsh
+        run: flutter create --platforms=windows --project-name goye --org org.rccg .
+      - name: Fetch Flutter packages
+        working-directory: app
+        shell: pwsh
+        run: flutter pub get
+      - name: Build Windows scaffold
+        working-directory: app
+        shell: pwsh
+        run: flutter build windows
+      - name: Upload portable Windows scaffold
+        uses: actions/upload-artifact@v4
+        with:
+          name: goye-windows-portable-unsigned
+          path: app/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,13 @@
+node_modules/
+coverage/
+dist/
+.dart_tool/
+build/
+android/.gradle/
+windows/flutter/ephemeral/
+ios/Flutter/ephemeral/
+*.lock
+*.png
+*.jpg
+*.docx
+*.ico

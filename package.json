@@ -1,0 +1,47 @@
+{
+  "name": "go-ye",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RCCG Go-Ye soul-winning and follow-up platform",
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "backend:build": "npm run build --workspace=@goye/backend",
+    "backend:lint": "npm run lint --workspace=@goye/backend",
+    "backend:format:check": "npm run format:check --workspace=@goye/backend",
+    "backend:test": "npm run test --workspace=@goye/backend",
+    "backend:test:e2e": "npm run test:e2e --workspace=@goye/backend",
+    "app:format:check": "cd app && dart format --output=none --set-exit-if-changed lib test",
+    "app:format": "cd app && dart format lib test",
+    "app:analyze": "cd app && flutter analyze",
+    "app:test": "cd app && flutter test",
+    "lint": "npm run backend:lint && npm run app:analyze",
+    "format:check": "prettier --check . && npm run backend:format:check && npm run app:format:check",
+    "format": "prettier --write . && npm run backend:format && npm run app:format",
+    "test": "npm run backend:test && npm run app:test",
+    "validate:foundation": "python3 scripts/validate_foundation.py"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.3"
+  },
+  "lint-staged": {
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "backend/**/*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "app/**/*.dart": [
+      "dart format"
+    ]
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}

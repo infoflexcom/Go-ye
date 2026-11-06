@@ -1,0 +1,6 @@
+# This file tracks properties of this Flutter project.
+# It is managed by the Flutter tool and intentionally starts with an app project type.
+version:
+  revision: skeleton-created-without-local-flutter-sdk
+  channel: stable
+project_type: app

@@ -56,7 +56,7 @@ def main() -> int:
     for decision_id in REQUIRED_DECISION_IDS:
         require(decision_id in decisions, f"Decision register is missing {decision_id}")
 
-    require("awaiting sponsor approval" in progress.lower(), "Progress must retain the approval gate")
+    require("## Current gate" in progress and "Phase 0" in progress, "Progress must retain a Phase 0 gate")
     require("PII_ENCRYPTION_KEY=replace-with" in env_example, "PII key must be a non-secret placeholder")
     require("JWT_ACCESS_SECRET=replace-with" in env_example, "JWT access secret must be a placeholder")
     require("*.p12" in gitignore and "*.keystore" in gitignore, "Signing material must be ignored")

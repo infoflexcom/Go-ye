@@ -3,20 +3,22 @@
 This register records the safe defaults adopted while requirements remain open. It is deliberately append-only: a later change should add a dated superseding entry rather than rewrite history.
 
 ## ADR-001 — Monorepo and shared contracts
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
 Use one church-owned repository with:
 
-- `mobile/` — Flutter application for Android, iOS and Windows;
+- `app/` — Flutter application for Android, iOS and Windows;
 - `backend/` — NestJS TypeScript REST API and worker processes;
-- `infrastructure/` — Docker, database and operational configuration;
+- `infra/` — Docker, database and operational configuration;
 - `docs/` — architecture, operations, privacy, handover and phase records;
 - `scripts/` — repeatable developer, migration, build and release commands.
 
 OpenAPI is generated from the NestJS API and checked into an export during release. A typed Dart client will be generated from that contract rather than manually duplicated. This reduces drift across all three clients and the shared backend.
 
 ## ADR-002 — Client state, storage and offline behaviour
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -27,6 +29,7 @@ Every locally created or edited record receives a UUID, `client_updated_at`, syn
 **Why:** offline-first is a core pilot risk; an online-only form would lose the harvest in poor-network areas.
 
 ## ADR-003 — Backend, PostgreSQL and hierarchy enforcement
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -37,6 +40,7 @@ NestJS + TypeScript, PostgreSQL and the `ltree` extension are retained as specif
 Read scope is the actor's home unit plus descendants. Global administrators have a null `home_unit_id` and an explicit global role; no other null home unit is valid. A user has exactly one home unit and may have one or more roles, each bounded by that home unit. Parish-level restricted workers see only their assigned converts unless a pastor-created access grant widens that scope.
 
 ## ADR-004 — Convert ownership and roll-ups
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -47,6 +51,7 @@ Roll-ups count a convert once per reporting unit, never once for each arbitrary 
 Any convert detail read by a non-parish actor creates an append-only audit event. The audit trail uses chained HMAC hashes plus database permissions so ordinary API roles cannot alter history. The implementation must include verification tooling.
 
 ## ADR-005 — Privacy, consent and deletion
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -57,6 +62,7 @@ The system will support access/export, correction, removal request, deletion/ano
 `mask_phone_numbers_above_parish` defaults to `false` as specified. It is a tenant setting enforced by API serializers/export services, not a client display preference, so it can be switched without an app release.
 
 ## ADR-006 — Auth and safety defaults
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -65,6 +71,7 @@ Authentication is phone or email OTP. Public self-service registration is disabl
 All traffic requires TLS in deployment. Input schemas are validated server-side, responses use allowlisted DTOs, CORS is allowlisted, security headers are set, and dependency/vulnerability checks run in CI.
 
 ## ADR-007 — Follow-up schedule, escalation and messages
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -73,12 +80,14 @@ Default milestones are call within 24 hours, prayer on Day 3, visit on Day 7, th
 Firebase Cloud Messaging is the first notification channel. Windows uses local notifications from synced assignments. SMS and WhatsApp providers remain disabled until a church-owned provider account, approved template/consent workflow and monthly hard cap are configured. The default cap is zero, which prevents accidental billable sends.
 
 ## ADR-008 — Parish suggestion and assignment safety
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
 The app may suggest nearby active parishes only after explicit location permission or an address supplied by the convert. It presents the basis of the suggestion and requires a worker confirmation; it never silently routes a person. When no location is available or confidence is low, the convert remains unassigned at the registering unit for accountable manual allocation.
 
 ## ADR-009 — Branding and accessibility
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -87,6 +96,7 @@ The app may suggest nearby active parishes only after explicit location permissi
 The visual language will favour the familiar WhatsApp-like model: clear single-purpose screens, large touch targets, plain language, low-data media controls, high contrast and keyboard/screen-reader support. Initial UI locales are English, Yoruba, Hausa, Igbo, French and Nigerian Pidgin, with strings/content delivered from extensible locale catalogs rather than code branches.
 
 ## ADR-010 — Releases, signing and platform constraints
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
@@ -95,6 +105,7 @@ Release automation will create Android APK/AAB on Linux, iOS archive/IPA on a ma
 This Linux workspace can test shared/backend code and may produce unsigned Android artifacts if the Android SDK is installed. It cannot truthfully produce an Apple-signed IPA/App Store archive without a macOS runner, Xcode and Apple Developer signing assets, nor a Windows installer executable without a Windows runner/toolchain. These constraints will be recorded in each release manifest.
 
 ## ADR-011 — Initial deployment posture
+
 **Date:** 2026-11-06
 **Status:** Accepted
 
