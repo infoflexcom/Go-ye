@@ -1,0 +1,13 @@
+type,name,code,parent_code,is_active
+COUNTRY,Nigeria,NG,,true
+REGION,Lagos Region,NG-LAG-REG,NG,true
+PROVINCE,Lagos Province One,NG-LAG-PRO-1,NG-LAG-REG,true
+ZONE,Lagos Zone One,NG-LAG-ZON-1,NG-LAG-PRO-1,true
+AREA,Lagos Area One,NG-LAG-ARE-1,NG-LAG-ZON-1,true
+PARISH,Sample Parish Alpha,NG-LAG-PAR-A,NG-LAG-ARE-1,true
+COUNTRY,Ghana,GH,,true
+REGION,Accra Region,GH-ACC-REG,GH,true
+PROVINCE,Accra Province One,GH-ACC-PRO-1,GH-ACC-REG,true
+ZONE,Accra Zone One,GH-ACC-ZON-1,GH-ACC-PRO-1,true
+AREA,Accra Area One,GH-ACC-ARE-1,GH-ACC-ZON-1,true
+PARISH,Sample Parish Accra,GH-ACC-PAR-A,GH-ACC-ARE-1,true

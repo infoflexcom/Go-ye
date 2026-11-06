@@ -15,7 +15,7 @@ This phase created only the safe engineering foundation. No real convert, church
 - [x] **1.2 OTP authentication, JWT, refresh and lockout:** OTP challenges are hashed and rate-limited; verification creates device-bound rotating sessions and short-lived JWTs; refresh reuse remotely revokes active sessions.
 - [x] **1.3 RBAC and PostgreSQL RLS:** request actors are derived from fresh active sessions and roles; the runtime database role is non-superuser/non-BYPASSRLS; PostgreSQL policies enforce home-unit-plus-descendant scope.
 - [x] **1.4 Admin unit/user/role APIs and audited moves:** Global Admin endpoints create/edit/deactivate/move units and manage users/roles; moves rebuild descendant paths transactionally and append tamper-evident audit entries.
-- [ ] **1.5 Sample seed and hierarchy importer**
+- [x] **1.5 Sample seed and hierarchy importer:** guarded sample seed supplies Nigeria and Ghana fixtures; CSV/XLSX import validates, dry-runs, upserts and uses the managed move function where needed.
 - [ ] **1.6 Permission test matrix and coverage gate**
 - [ ] **1.7 Swagger publication and hierarchy/permissions documentation**
 

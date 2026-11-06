@@ -16,7 +16,9 @@
     "test:watch": "vitest",
     "test:e2e": "vitest run test",
     "migration:up": "tsx src/database/migrate.ts up",
-    "migration:down": "tsx src/database/migrate.ts down"
+    "migration:down": "tsx src/database/migrate.ts down",
+    "seed:sample": "tsx src/scripts/seed-sample-hierarchy.ts",
+    "hierarchy:import": "tsx src/scripts/import-hierarchy.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.4.0",
@@ -27,6 +29,7 @@
     "@nestjs/swagger": "^12.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "exceljs": "^4.4.0",
     "helmet": "^8.3.0",
     "joi": "^18.3.2",
     "pg": "^8.23.1",
