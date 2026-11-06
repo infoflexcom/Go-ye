@@ -5,21 +5,20 @@
 
 ## Current gate
 
-**Phase 0 — clean project skeleton: IN PROGRESS.**
+**Phase 0 — clean project skeleton: IMPLEMENTATION COMPLETE; awaiting sponsor responses and explicit `proceed`.**
 
-This phase creates only the safe engineering foundation. No real convert, church hierarchy, identity, provider or production data may be entered into this repository or its development stack.
+This phase created only the safe engineering foundation. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack.
 
-## Target exit criteria
+## Exit criteria record
 
-- [ ] Monorepo has `/backend`, `/app`, `/docs`, `/infra` and `/assets`; supplied proposal, flowchart and logos are copied into `/assets`.
-- [ ] `docker compose up --build` starts PostgreSQL and the API; `GET /api/v1/hello` returns the documented response.
-- [ ] Backend linting, formatting, unit/e2e test framework and build are configured.
-- [ ] Flutter/Riverpod shell, formatting, analysis and widget-test framework are configured for Android/iOS/Windows bootstrap.
-- [ ] GitHub Actions covers backend checks, Flutter checks and Android debug build, with manual macOS/iOS and Windows scaffold build jobs.
-- [ ] Architecture, decision log, progress record and initial ERD are present.
-- [ ] The six required sponsor questions have been sent in one batch.
-- [ ] Checks that this environment can run have passed; unavailable Docker/Flutter/platform checks are transparently recorded.
-- [ ] `phase-0-complete` is an annotated Git tag after validation.
+- [x] Monorepo has `/backend`, `/app`, `/docs`, `/infra` and `/assets`; all four supplied files were copied byte-for-byte into `/assets`.
+- [~] Docker Compose API/PostgreSQL stack and hello API smoke path are implemented. The API was verified locally outside Docker; this workspace has no Docker executable, so `docker compose up` could not be run here. A Compose smoke-test CI job is included.
+- [x] Backend Prettier, type-aware ESLint, Vitest unit/e2e tests and TypeScript build are configured and pass locally.
+- [~] Flutter/Riverpod shell, Dart formatting, analysis, widget tests and Android/iOS/Windows runner bootstrap are configured. This workspace has no Flutter/Dart, Android SDK, Java or Windows toolchain, so Android-emulator and Windows launch commands could not be executed locally.
+- [~] CI workflow is committed for backend quality/tests/dependency scan, Docker Compose smoke test, Flutter checks and Android debug build; manual macOS/iOS and Windows builds are scaffolded. GitHub Actions could not be dispatched from this branch because the GitHub integration reports no available workflows and denies Actions permission (`HTTP 403 Resource not accessible by integration`).
+- [x] `ARCHITECTURE.md`, `DECISIONS.md`, `PROGRESS.md`, `DEVELOPMENT.md` and the initial logical `ERD.md` exist.
+- [x] The six required sponsor questions are dispatched together as the final Phase 0 action.
+- [x] Annotated Git tag `phase-0-complete` is created after local validation.
 
 ## Completed in this increment
 
@@ -28,14 +27,27 @@ This phase creates only the safe engineering foundation. No real convert, church
 - Created the NestJS hello/health API, PostgreSQL Compose stack, local environment template, Dockerfile and API unit/e2e test setup.
 - Created the Flutter/Riverpod shell, widget test, lint configuration and reproducible Android/iOS/Windows runner bootstrap script.
 - Added Prettier, type-aware ESLint, Dart/Flutter formatting and analysis commands, and Husky/lint-staged pre-commit configuration.
-- Added CI jobs for backend, Flutter tests and Android debug build, plus manually dispatched macOS/iOS and Windows build scaffolds.
+- Added CI jobs for backend, Docker Compose smoke test, Flutter tests and Android debug build, plus manually dispatched macOS/iOS and Windows build scaffolds.
 - Added the first logical ERD and Phase 0 developer-operating instructions.
 
 ## Validation record
 
-Pending final command results and tag creation.
+| Check                                                        | Result                                                                                                                                    |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run backend:format:check`                               | Passed                                                                                                                                    |
+| `npm run backend:lint`                                       | Passed                                                                                                                                    |
+| `npm run backend:test`                                       | Passed — 2 files, 3 tests                                                                                                                 |
+| `npm run backend:build`                                      | Passed                                                                                                                                    |
+| `npm audit --omit=dev --audit-level=high`                    | Passed — 0 production vulnerabilities                                                                                                     |
+| `python3 scripts/validate_foundation.py`                     | Passed                                                                                                                                    |
+| `npx prettier --check .`                                     | Passed                                                                                                                                    |
+| `git diff --check`                                           | Passed                                                                                                                                    |
+| Local compiled API `GET /api/v1/hello`                       | Passed — returned documented response                                                                                                     |
+| Local compiled API `GET /api/v1/health`                      | Passed — API healthy; database intentionally not configured outside Compose                                                               |
+| Supplied asset copy SHA-256 comparison                       | Passed — four source/copy pairs match                                                                                                     |
+| Docker Compose / Flutter / Android emulator / Windows launch | Not runnable in this workspace; CI configuration is present, but remote Actions dispatch is currently not authorised for this integration |
 
-## Scope explicitly deferred to Phase 1
+## Scope deferred to Phase 1
 
 - Versioned PostgreSQL `ltree` migrations, rollback notes, RLS policies and tamper-evident audit implementation.
 - Authentication/OTP, session security, role assignments, church hierarchy import and global-admin bootstrap.
@@ -45,4 +57,4 @@ Pending final command results and tag creation.
 
 ## Known platform constraints
 
-This Phase 0 workspace is Linux and currently lacks Docker Engine, Flutter/Dart, Java, Android SDK, macOS/Xcode and Windows toolchains. It therefore cannot truthfully demonstrate Compose startup, Android emulator launch, Windows launch, APK/AAB, IPA/archive or EXE creation locally. The Compose configuration, Flutter runner bootstrap and CI workflows have been prepared; actual runner verification belongs to the relevant available platform/CI execution.
+This Phase 0 workspace is Linux and lacks Docker Engine, Flutter/Dart, Java, Android SDK, macOS/Xcode and Windows toolchains. It therefore cannot truthfully demonstrate Compose startup, Android emulator launch, Windows launch, APK/AAB, IPA/archive or EXE creation locally. The Compose configuration, Flutter runner bootstrap and CI workflows have been prepared. Actual runner verification needs an authorised GitHub Actions run or the relevant local platform/toolchain.
