@@ -151,3 +151,12 @@ Names, phone numbers and addresses are encrypted at the API boundary with an aut
 A registration at Country through Area is unassigned until an authorised actor selects an active descendant Parish. The pool age is calculated from the immutable server `created_at` at query time, preventing stale counters. A Parish registration is assigned to that same Parish in the capture transaction and therefore never waits in the pool.
 
 Assignment is a one-time controlled database operation: it cannot cross the registration unit boundary, cannot target an inactive/non-Parish unit, and creates exactly one pending Call-24h, Prayer-Day-3, and Visit-Day-7 task. Reassignment is intentionally deferred until a future accountable transfer workflow is designed, rather than silently duplicating follow-up tasks.
+
+## ADR-016 — Duplicate detection and canonical merge
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+Duplicate discovery uses a keyed HMAC-SHA-256 of normalised E.164 phone numbers (`PII_LOOKUP_PEPPER`), never a raw contact number or unsalted public digest. Candidates remain subject to the caller's RLS scope. Detection informs an authorised human; it does not silently merge people with a shared household phone number.
+
+A merge marks only the duplicate as `merged_into_id`; the canonical record survives, so subsequent totals count once. Cross-country and conflicting-Parish merges are rejected. Pending duplicate follow-up actions are cancelled where they collide, while non-duplicate historical actions transfer to the canonical record. A future reassignment/transfer workflow is required before merging conflicting Parish ownership.

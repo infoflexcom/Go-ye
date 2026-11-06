@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -10,6 +10,8 @@ import type { AuthenticatedActor } from '../authorization/authorization.types.js
 import { CurrentActor } from '../authorization/current-actor.decorator.js';
 import { JwtAuthGuard } from '../authorization/jwt-auth.guard.js';
 import { AssignConvertDto } from './dto/assign-convert.dto.js';
+import { DetectDuplicateDto } from './dto/detect-duplicate.dto.js';
+import { MergeConvertDto } from './dto/merge-convert.dto.js';
 import { CreateConvertDto } from './dto/create-convert.dto.js';
 import { UpdateConvertDto } from './dto/update-convert.dto.js';
 import { ConvertsService } from './converts.service.js';
@@ -29,6 +31,26 @@ export class ConvertsController {
   })
   create(@CurrentActor() actor: AuthenticatedActor, @Body() dto: CreateConvertDto) {
     return this.converts.create(actor, dto);
+  }
+
+  @Get('duplicates')
+  @ApiOperation({
+    summary: 'Find visible active duplicate candidates by privacy-preserving phone lookup',
+  })
+  detectDuplicates(@CurrentActor() actor: AuthenticatedActor, @Query() dto: DetectDuplicateDto) {
+    return this.converts.detectDuplicates(actor, dto);
+  }
+
+  @Post(':id/merge')
+  @ApiOperation({
+    summary: 'Merge one duplicate into the canonical convert without double-counting',
+  })
+  merge(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Body() dto: MergeConvertDto,
+  ) {
+    return this.converts.merge(actor, id, dto);
   }
 
   @Get('unassigned')

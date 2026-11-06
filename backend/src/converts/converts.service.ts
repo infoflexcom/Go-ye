@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuditService } from '../audit/audit.service.js';
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
@@ -12,6 +13,8 @@ import { normalizeIdentity } from '../auth/auth.identity.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
 import type { AssignConvertDto } from './dto/assign-convert.dto.js';
+import type { DetectDuplicateDto } from './dto/detect-duplicate.dto.js';
+import type { MergeConvertDto } from './dto/merge-convert.dto.js';
 import type { CreateConvertDto } from './dto/create-convert.dto.js';
 import type { UpdateConvertDto } from './dto/update-convert.dto.js';
 
@@ -36,6 +39,9 @@ type ConvertDatabaseRow = {
   parish_id: string | null;
   assigned_at: Date | null;
   assigned_by: string | null;
+  merged_into_id: string | null;
+  merged_at: Date | null;
+  merged_by: string | null;
   consent_version: string;
   consent_method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
   consent_captured_at: Date;
@@ -54,6 +60,9 @@ export interface ConvertRecord {
   parishId?: string;
   assignedAt?: Date;
   assignedBy?: string;
+  mergedIntoId?: string;
+  mergedAt?: Date;
+  mergedBy?: string;
   consent: {
     version: string;
     method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
@@ -89,6 +98,7 @@ export class ConvertsService {
     }
     const fullName = this.requiredText(dto.fullName, 'fullName');
     const phone = dto.phone ? this.normalizedPhone(dto.phone) : undefined;
+    const phoneLookupHash = phone ? this.phoneLookupHash(phone) : undefined;
     const address = dto.address ? this.requiredText(dto.address, 'address') : undefined;
 
     return this.withConvertActor(actor, async (client) => {
@@ -101,15 +111,16 @@ export class ConvertsService {
       }
       const result = await client.query<ConvertDatabaseRow>(
         `INSERT INTO converts (
-          full_name_encrypted, phone_encrypted, address_encrypted,
+          full_name_encrypted, phone_encrypted, address_encrypted, phone_lookup_hash,
           registered_at_unit_id, registered_by,
           consent_granted, consent_version, consent_method, consent_captured_by
-        ) VALUES ($1, $2, $3, $4, $5, true, $6, $7::consent_capture_method, $5)
+        ) VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8::consent_capture_method, $6)
         RETURNING ${this.convertColumns()}`,
         [
           this.encryption.encrypt(fullName),
           phone ? this.encryption.encrypt(phone) : null,
           address ? this.encryption.encrypt(address) : null,
+          phoneLookupHash ?? null,
           registeredAtUnitId,
           actor.id,
           this.requiredText(dto.consent.version, 'consent.version'),
@@ -162,6 +173,48 @@ export class ConvertsService {
     });
   }
 
+  async detectDuplicates(
+    actor: AuthenticatedActor,
+    dto: DetectDuplicateDto,
+  ): Promise<ConvertRecord[]> {
+    this.assertConvertWorker(actor);
+    const hash = this.phoneLookupHash(this.normalizedPhone(dto.phone));
+    return this.withConvertActor(actor, async (client) => {
+      const result = await client.query<ConvertDatabaseRow>(
+        `SELECT ${this.convertColumns()} FROM converts
+         WHERE phone_lookup_hash = $1 AND merged_into_id IS NULL
+         ORDER BY created_at ASC`,
+        [hash],
+      );
+      return result.rows.map((row) => this.toRecord(row));
+    });
+  }
+
+  async merge(
+    actor: AuthenticatedActor,
+    targetConvertId: string,
+    dto: MergeConvertDto,
+  ): Promise<ConvertRecord> {
+    this.assertConvertWorker(actor);
+    return this.withConvertActor(actor, async (client) => {
+      await client.query('SELECT * FROM goye_merge_converts($1, $2, $3)', [
+        dto.duplicateConvertId,
+        targetConvertId,
+        actor.id,
+      ]);
+      const target = await this.getInTransaction(client, targetConvertId);
+      await this.audit.append(client, {
+        actorUserId: actor.id,
+        action: 'CONVERT_MERGED',
+        resourceType: 'CONVERT',
+        resourceId: targetConvertId,
+        scopeUnitId: target.parish_id ?? target.registered_at_unit_id,
+        metadata: { mergedDuplicateConvertId: dto.duplicateConvertId },
+      });
+      return this.toRecord(target);
+    });
+  }
+
   async listUnassigned(
     actor: AuthenticatedActor,
   ): Promise<(ConvertRecord & { unassignedAgeDays: number })[]> {
@@ -171,7 +224,7 @@ export class ConvertsService {
         `SELECT ${this.convertColumns()},
                 floor(extract(epoch FROM (now() - created_at)) / 86400)::integer AS unassigned_age_days
          FROM converts
-         WHERE parish_id IS NULL
+         WHERE parish_id IS NULL AND merged_into_id IS NULL
          ORDER BY created_at ASC`,
       );
       return result.rows.map((row) => ({
@@ -214,6 +267,7 @@ export class ConvertsService {
     const fullName =
       dto.fullName === undefined ? undefined : this.requiredText(dto.fullName, 'fullName');
     const phone = dto.phone === undefined ? undefined : this.normalizedPhone(dto.phone);
+    const phoneLookupHash = phone === undefined ? undefined : this.phoneLookupHash(phone);
     const address =
       dto.address === undefined ? undefined : this.requiredText(dto.address, 'address');
 
@@ -222,14 +276,16 @@ export class ConvertsService {
         `UPDATE converts
          SET full_name_encrypted = CASE WHEN $1::boolean THEN $2 ELSE full_name_encrypted END,
              phone_encrypted = CASE WHEN $3::boolean THEN $4 ELSE phone_encrypted END,
-             address_encrypted = CASE WHEN $5::boolean THEN $6 ELSE address_encrypted END
-         WHERE id = $7
+             phone_lookup_hash = CASE WHEN $3::boolean THEN $5 ELSE phone_lookup_hash END,
+             address_encrypted = CASE WHEN $6::boolean THEN $7 ELSE address_encrypted END
+         WHERE id = $8
          RETURNING ${this.convertColumns()}`,
         [
           fullName !== undefined,
           fullName ? this.encryption.encrypt(fullName) : null,
           phone !== undefined,
           phone ? this.encryption.encrypt(phone) : null,
+          phoneLookupHash ?? null,
           address !== undefined,
           address ? this.encryption.encrypt(address) : null,
           id,
@@ -316,6 +372,14 @@ export class ConvertsService {
     return secret;
   }
 
+  private phoneLookupHash(phone: string): string {
+    const pepper = this.config.get<string>('PII_LOOKUP_PEPPER');
+    if (!pepper || pepper.startsWith('replace-with-')) {
+      throw new Error('PII_LOOKUP_PEPPER must be configured for duplicate detection.');
+    }
+    return createHmac('sha256', pepper).update(phone).digest('hex');
+  }
+
   private normalizedPhone(value: string): string {
     const normalized = normalizeIdentity(value);
     if (normalized.channel !== 'PHONE') {
@@ -335,6 +399,7 @@ export class ConvertsService {
   private convertColumns(): string {
     return `id, full_name_encrypted, phone_encrypted, address_encrypted,
       registered_at_unit_id, registered_by, parish_id, assigned_at, assigned_by,
+      merged_into_id, merged_at, merged_by,
       consent_version, consent_method::text, consent_captured_at, consent_captured_by,
       created_at, updated_at`;
   }
@@ -350,6 +415,9 @@ export class ConvertsService {
       ...(row.parish_id ? { parishId: row.parish_id } : {}),
       ...(row.assigned_at ? { assignedAt: row.assigned_at } : {}),
       ...(row.assigned_by ? { assignedBy: row.assigned_by } : {}),
+      ...(row.merged_into_id ? { mergedIntoId: row.merged_into_id } : {}),
+      ...(row.merged_at ? { mergedAt: row.merged_at } : {}),
+      ...(row.merged_by ? { mergedBy: row.merged_by } : {}),
       consent: {
         version: row.consent_version,
         method: row.consent_method,

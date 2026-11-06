@@ -35,6 +35,7 @@ describe('ConvertsService', () => {
       DATABASE_URL: testDatabase.connectionString,
       AUDIT_CHAIN_SECRET: auditSecret,
       PII_ENCRYPTION_KEY: piiKey,
+      PII_LOOKUP_PEPPER: 'convert-test-lookup-pepper-which-is-at-least-thirty-two-bytes',
     });
     database = new DatabaseService(config);
     converts = new ConvertsService(
@@ -236,6 +237,39 @@ describe('ConvertsService', () => {
       [created.id],
     );
     expect(scheduled.rows[0].count).toBe('3');
+  });
+
+  it('detects visible phone duplicates and merges only the duplicate into a canonical convert', async () => {
+    const primary = await converts.create(areaActor, {
+      fullName: 'Primary Candidate',
+      phone: '+2348030000111',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const duplicate = await converts.create(areaActor, {
+      fullName: 'Duplicate Candidate',
+      phone: '+2348030000111',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const candidates = await converts.detectDuplicates(areaActor, { phone: '+234 803 000 0111' });
+    expect(candidates.map((candidate) => candidate.id)).toEqual([primary.id, duplicate.id]);
+
+    const mergedTarget = await converts.merge(areaActor, primary.id, {
+      duplicateConvertId: duplicate.id,
+    });
+    expect(mergedTarget.id).toBe(primary.id);
+    const source = await converts.get(areaActor, duplicate.id);
+    expect(source.mergedIntoId).toBe(primary.id);
+    const unassigned = await converts.listUnassigned(areaActor);
+    expect(unassigned.some((convert) => convert.id === duplicate.id)).toBe(false);
+
+    const audit = await testDatabase.pool.query<{
+      action: string;
+      metadata: { mergedDuplicateConvertId: string };
+    }>(
+      `SELECT action, metadata FROM audit_log WHERE resource_id = $1 AND action = 'CONVERT_MERGED'`,
+      [primary.id],
+    );
+    expect(audit.rows[0].metadata.mergedDuplicateConvertId).toBe(duplicate.id);
   });
 
   it('updates editable encrypted fields without changing registration or consent provenance', async () => {
