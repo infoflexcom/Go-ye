@@ -142,3 +142,12 @@ Swagger/OpenAPI is published by the API at `/api/docs` and `/api/docs-json` with
 A convert cannot be persisted unless the request carries affirmative consent and a non-blank policy/notice version. The server—not the client—records the consent timestamp and authenticated actor, and database triggers make the registration origin and captured consent immutable. The service also checks consent itself, so direct service use cannot rely only on HTTP DTO validation.
 
 Names, phone numbers and addresses are encrypted at the API boundary with an authenticated AES-256-GCM envelope using the church-owned `PII_ENCRYPTION_KEY`; raw PII is neither placed in audit metadata nor in reporting fields. An authorised non-Global actor registers only at their own home unit. A Global Admin must explicitly name the registration unit. Above-parish records begin without a parish assignment and are handled by the next workflow task.
+
+## ADR-015 — Unassigned Pool and parish follow-up start
+
+**Date:** 2026-11-06
+**Status:** Accepted
+
+A registration at Country through Area is unassigned until an authorised actor selects an active descendant Parish. The pool age is calculated from the immutable server `created_at` at query time, preventing stale counters. A Parish registration is assigned to that same Parish in the capture transaction and therefore never waits in the pool.
+
+Assignment is a one-time controlled database operation: it cannot cross the registration unit boundary, cannot target an inactive/non-Parish unit, and creates exactly one pending Call-24h, Prayer-Day-3, and Visit-Day-7 task. Reassignment is intentionally deferred until a future accountable transfer workflow is designed, rather than silently duplicating follow-up tasks.

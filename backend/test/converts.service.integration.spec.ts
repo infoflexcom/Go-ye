@@ -183,6 +183,61 @@ describe('ConvertsService', () => {
     await expect(converts.get(parishActor, existing.rows[0].id)).rejects.toThrow(/not found/i);
   });
 
+  it('shows above-parish registrations in the ageing Unassigned Pool and starts follow-up tasks on assignment', async () => {
+    const existing = await testDatabase.pool.query<{ id: string }>(
+      'SELECT id FROM converts LIMIT 1',
+    );
+    await testDatabase.pool.query(
+      `UPDATE converts SET created_at = now() - interval '3 days 2 hours' WHERE id = $1`,
+      [existing.rows[0].id],
+    );
+
+    const pool = await converts.listUnassigned(areaActor);
+    expect(pool).toHaveLength(1);
+    expect(pool[0]).toMatchObject({ id: existing.rows[0].id, unassignedAgeDays: 3 });
+
+    const assigned = await converts.assignToParish(areaActor, existing.rows[0].id, {
+      parishId: units.get('NG-PAR-A')!.id,
+    });
+    expect(assigned.parishId).toBe(units.get('NG-PAR-A')?.id);
+    expect(assigned.assignedBy).toBe(areaActor.id);
+    expect(await converts.listUnassigned(areaActor)).toEqual([]);
+
+    const tasks = await testDatabase.pool.query<{
+      task_type: string;
+      parish_id: string;
+      status: string;
+    }>(
+      `SELECT task_type::text, parish_id, status::text FROM follow_up_tasks
+       WHERE convert_id = $1 ORDER BY task_type`,
+      [existing.rows[0].id],
+    );
+    expect(tasks.rows).toEqual([
+      { task_type: 'CALL_24H', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
+      { task_type: 'PRAYER_DAY_3', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
+      { task_type: 'VISIT_DAY_7', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
+    ]);
+    await expect(
+      converts.assignToParish(areaActor, existing.rows[0].id, {
+        parishId: units.get('NG-PAR-B')!.id,
+      }),
+    ).rejects.toThrow(/already assigned/i);
+  });
+
+  it('assigns a parish registration immediately and starts parish follow-up without an Unassigned Pool delay', async () => {
+    const created = await converts.create(parishActor, {
+      fullName: 'Parish Convert',
+      consent: { granted: true, version: '2026-11', method: 'VERBAL' },
+    });
+    expect(created.parishId).toBe(units.get('NG-PAR-B')?.id);
+    expect(created.assignedBy).toBe(parishActor.id);
+    const scheduled = await testDatabase.pool.query<{ count: string }>(
+      `SELECT count(*) FROM follow_up_tasks WHERE convert_id = $1`,
+      [created.id],
+    );
+    expect(scheduled.rows[0].count).toBe('3');
+  });
+
   it('updates editable encrypted fields without changing registration or consent provenance', async () => {
     const existing = await testDatabase.pool.query<{ id: string }>(
       'SELECT id FROM converts LIMIT 1',

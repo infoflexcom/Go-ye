@@ -11,6 +11,7 @@ import type { AuthenticatedActor } from '../authorization/authorization.types.js
 import { normalizeIdentity } from '../auth/auth.identity.js';
 import { DatabaseService } from '../database/database.service.js';
 import { FieldEncryptionService } from '../privacy/field-encryption.service.js';
+import type { AssignConvertDto } from './dto/assign-convert.dto.js';
 import type { CreateConvertDto } from './dto/create-convert.dto.js';
 import type { UpdateConvertDto } from './dto/update-convert.dto.js';
 
@@ -33,6 +34,8 @@ type ConvertDatabaseRow = {
   registered_at_unit_id: string;
   registered_by: string;
   parish_id: string | null;
+  assigned_at: Date | null;
+  assigned_by: string | null;
   consent_version: string;
   consent_method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
   consent_captured_at: Date;
@@ -49,6 +52,8 @@ export interface ConvertRecord {
   registeredAtUnitId: string;
   registeredBy: string;
   parishId?: string;
+  assignedAt?: Date;
+  assignedBy?: string;
   consent: {
     version: string;
     method: 'VERBAL' | 'DIGITAL' | 'WRITTEN';
@@ -87,8 +92,8 @@ export class ConvertsService {
     const address = dto.address ? this.requiredText(dto.address, 'address') : undefined;
 
     return this.withConvertActor(actor, async (client) => {
-      const registrationUnit = await client.query<{ id: string }>(
-        'SELECT id FROM org_units WHERE id = $1 AND is_active',
+      const registrationUnit = await client.query<{ id: string; type: string }>(
+        'SELECT id, type::text FROM org_units WHERE id = $1 AND is_active',
         [registeredAtUnitId],
       );
       if (!registrationUnit.rows[0]) {
@@ -111,7 +116,11 @@ export class ConvertsService {
           dto.consent.method,
         ],
       );
-      const row = result.rows[0];
+      let row = result.rows[0];
+      if (registrationUnit.rows[0].type === 'PARISH') {
+        await this.assignToParishInTransaction(client, row.id, registeredAtUnitId, actor.id);
+        row = await this.getInTransaction(client, row.id);
+      }
       await this.audit.append(client, {
         actorUserId: actor.id,
         action: 'CONVERT_REGISTERED_WITH_CONSENT',
@@ -124,6 +133,16 @@ export class ConvertsService {
           consentMethod: row.consent_method,
         },
       });
+      if (row.parish_id) {
+        await this.audit.append(client, {
+          actorUserId: actor.id,
+          action: 'CONVERT_ASSIGNED_TO_PARISH',
+          resourceType: 'CONVERT',
+          resourceId: row.id,
+          scopeUnitId: row.parish_id,
+          metadata: { parishId: row.parish_id, automaticFromParishRegistration: true },
+        });
+      }
       return this.toRecord(row);
     });
   }
@@ -139,6 +158,46 @@ export class ConvertsService {
       if (!row) {
         throw new NotFoundException('Convert not found.');
       }
+      return this.toRecord(row);
+    });
+  }
+
+  async listUnassigned(
+    actor: AuthenticatedActor,
+  ): Promise<(ConvertRecord & { unassignedAgeDays: number })[]> {
+    this.assertConvertWorker(actor);
+    return this.withConvertActor(actor, async (client) => {
+      const result = await client.query<ConvertDatabaseRow & { unassigned_age_days: number }>(
+        `SELECT ${this.convertColumns()},
+                floor(extract(epoch FROM (now() - created_at)) / 86400)::integer AS unassigned_age_days
+         FROM converts
+         WHERE parish_id IS NULL
+         ORDER BY created_at ASC`,
+      );
+      return result.rows.map((row) => ({
+        ...this.toRecord(row),
+        unassignedAgeDays: row.unassigned_age_days,
+      }));
+    });
+  }
+
+  async assignToParish(
+    actor: AuthenticatedActor,
+    id: string,
+    dto: AssignConvertDto,
+  ): Promise<ConvertRecord> {
+    this.assertConvertWorker(actor);
+    return this.withConvertActor(actor, async (client) => {
+      await this.assignToParishInTransaction(client, id, dto.parishId, actor.id);
+      const row = await this.getInTransaction(client, id);
+      await this.audit.append(client, {
+        actorUserId: actor.id,
+        action: 'CONVERT_ASSIGNED_TO_PARISH',
+        resourceType: 'CONVERT',
+        resourceId: row.id,
+        scopeUnitId: row.parish_id ?? undefined,
+        metadata: { parishId: row.parish_id, automaticFromParishRegistration: false },
+      });
       return this.toRecord(row);
     });
   }
@@ -196,6 +255,31 @@ export class ConvertsService {
     });
   }
 
+  private async assignToParishInTransaction(
+    client: PoolClient,
+    convertId: string,
+    parishId: string,
+    actorId: string,
+  ): Promise<void> {
+    await client.query('SELECT * FROM goye_assign_convert_to_parish($1, $2, $3)', [
+      convertId,
+      parishId,
+      actorId,
+    ]);
+  }
+
+  private async getInTransaction(client: PoolClient, id: string): Promise<ConvertDatabaseRow> {
+    const result = await client.query<ConvertDatabaseRow>(
+      `SELECT ${this.convertColumns()} FROM converts WHERE id = $1`,
+      [id],
+    );
+    const row = result.rows[0];
+    if (!row) {
+      throw new NotFoundException('Convert not found.');
+    }
+    return row;
+  }
+
   private async withConvertActor<T>(
     actor: AuthenticatedActor,
     callback: (client: PoolClient) => Promise<T>,
@@ -250,7 +334,7 @@ export class ConvertsService {
 
   private convertColumns(): string {
     return `id, full_name_encrypted, phone_encrypted, address_encrypted,
-      registered_at_unit_id, registered_by, parish_id,
+      registered_at_unit_id, registered_by, parish_id, assigned_at, assigned_by,
       consent_version, consent_method::text, consent_captured_at, consent_captured_by,
       created_at, updated_at`;
   }
@@ -264,6 +348,8 @@ export class ConvertsService {
       registeredAtUnitId: row.registered_at_unit_id,
       registeredBy: row.registered_by,
       ...(row.parish_id ? { parishId: row.parish_id } : {}),
+      ...(row.assigned_at ? { assignedAt: row.assigned_at } : {}),
+      ...(row.assigned_by ? { assignedBy: row.assigned_by } : {}),
       consent: {
         version: row.consent_version,
         method: row.consent_method,

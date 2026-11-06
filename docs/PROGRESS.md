@@ -12,7 +12,7 @@ Phase 2 is building the convert lifecycle, accurate hierarchy roll-ups, reportin
 ## Phase 2 task record
 
 - [x] **2.1 Consent-backed convert capture:** any authorised hierarchy level can register at its own unit; encrypted contact fields, immutable server-captured consent provenance, origin tracking, scoped read/update, and audit events are covered by genuine PostgreSQL tests.
-- [ ] **2.2 Unassigned Pool and parish assignment**
+- [x] **2.2 Unassigned Pool and parish assignment:** above-parish registrations surface with a live age-in-days counter; controlled descendant-parish assignment is one-time, schedules the 24-hour/Day-3/Day-7 plan, and parish-origin registrations are assigned/scheduled immediately.
 - [ ] **2.3 Duplicate detection and merge**
 - [ ] **2.4 Stage pipeline and append-only timeline**
 - [ ] **2.5 Hierarchy roll-ups and summaries**

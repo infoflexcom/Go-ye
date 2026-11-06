@@ -9,6 +9,7 @@ import {
 import type { AuthenticatedActor } from '../authorization/authorization.types.js';
 import { CurrentActor } from '../authorization/current-actor.decorator.js';
 import { JwtAuthGuard } from '../authorization/jwt-auth.guard.js';
+import { AssignConvertDto } from './dto/assign-convert.dto.js';
 import { CreateConvertDto } from './dto/create-convert.dto.js';
 import { UpdateConvertDto } from './dto/update-convert.dto.js';
 import { ConvertsService } from './converts.service.js';
@@ -28,6 +29,28 @@ export class ConvertsController {
   })
   create(@CurrentActor() actor: AuthenticatedActor, @Body() dto: CreateConvertDto) {
     return this.converts.create(actor, dto);
+  }
+
+  @Get('unassigned')
+  @ApiOperation({
+    summary:
+      'List visible above-parish registrations awaiting parish assignment and their live age in days',
+  })
+  listUnassigned(@CurrentActor() actor: AuthenticatedActor) {
+    return this.converts.listUnassigned(actor);
+  }
+
+  @Post(':id/assign-parish')
+  @ApiOperation({
+    summary:
+      'Assign an unassigned convert to a descendant parish and start the default follow-up plan',
+  })
+  assignToParish(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Body() dto: AssignConvertDto,
+  ) {
+    return this.converts.assignToParish(actor, id, dto);
   }
 
   @Get(':id')
