@@ -5,9 +5,19 @@
 
 ## Current gate
 
-**Phase 0 — clean project skeleton: COMPLETE; awaiting explicit `proceed`.**
+**Phase 1 — foundation: IN PROGRESS. Phase 0 remains tagged `phase-0-complete`.**
 
 This phase created only the safe engineering foundation. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack.
+
+## Phase 1 task record
+
+- [x] **1.1 Schema and migrations:** versioned PostgreSQL migrations create the `ltree` hierarchy, users, roles, devices, sessions and append-only audit foundation. Embedded PostgreSQL integration tests verify extensions, hierarchy structure and path construction.
+- [ ] **1.2 OTP authentication, JWT, refresh and lockout**
+- [ ] **1.3 RBAC and PostgreSQL RLS**
+- [ ] **1.4 Admin unit/user/role APIs and audited moves**
+- [ ] **1.5 Sample seed and hierarchy importer**
+- [ ] **1.6 Permission test matrix and coverage gate**
+- [ ] **1.7 Swagger publication and hierarchy/permissions documentation**
 
 ## Exit criteria record
 

@@ -1,0 +1,21 @@
+-- Rollback of Phase 1 core schema. Run only when no later migration depends on it.
+DROP TRIGGER IF EXISTS audit_log_no_update_or_delete ON audit_log;
+DROP FUNCTION IF EXISTS goye_reject_audit_mutation();
+DROP TABLE IF EXISTS audit_log;
+DROP TABLE IF EXISTS audit_chain_state;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS devices;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS users;
+DROP TRIGGER IF EXISTS org_units_prepare_before_write ON org_units;
+DROP FUNCTION IF EXISTS goye_prepare_org_unit();
+DROP FUNCTION IF EXISTS goye_expected_parent_type(org_unit_type);
+DROP FUNCTION IF EXISTS goye_unit_label(uuid);
+DROP TABLE IF EXISTS org_units;
+DROP TABLE IF EXISTS roles;
+DROP TYPE IF EXISTS session_status;
+DROP TYPE IF EXISTS device_platform;
+DROP TYPE IF EXISTS user_status;
+DROP TYPE IF EXISTS org_unit_type;
+DROP EXTENSION IF EXISTS ltree;
+DROP EXTENSION IF EXISTS pgcrypto;

@@ -26,5 +26,6 @@ WORKDIR /app
 COPY --from=production-dependencies /workspace/node_modules ./node_modules
 COPY --from=build /workspace/backend/package.json ./package.json
 COPY --from=build /workspace/backend/dist ./dist
+COPY --from=build /workspace/backend/migrations ./migrations
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

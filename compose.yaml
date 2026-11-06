@@ -38,6 +38,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/workspace/backend
+    command: sh -c "npm run migration:up && npm run start:dev"
     healthcheck:
       test:
         [
