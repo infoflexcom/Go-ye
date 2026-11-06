@@ -5,29 +5,41 @@ import '../../core/app_providers.dart';
 import '../../core/branding.dart';
 import '../../core/models.dart';
 import '../../l10n/app_localizations.dart';
+import '../admin/country_selector_screen.dart';
 import '../auth/auth_controller.dart';
+import '../directory/hierarchy_browser_screen.dart';
 
-class HomeShell extends ConsumerWidget {
+enum _WorkspaceDestination { dashboard, directory, countries }
+
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({required this.session, super.key});
 
   final Session session;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final destinations = <NavigationDestination>[
-      NavigationDestination(icon: const Icon(Icons.dashboard_outlined), label: context.l10n.dashboard),
-      NavigationDestination(icon: const Icon(Icons.person_add_alt_1_outlined), label: context.l10n.newDecision),
-      NavigationDestination(icon: const Icon(Icons.people_outline), label: context.l10n.converts),
-      if (session.roles.any(_canUseUnassignedPool))
-        NavigationDestination(icon: const Icon(Icons.assignment_late_outlined), label: context.l10n.unassigned),
-      if (session.isGlobalAdmin)
-        NavigationDestination(icon: const Icon(Icons.public_outlined), label: context.l10n.countries),
+  ConsumerState<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends ConsumerState<HomeShell> {
+  var _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final destinations = <_WorkspaceDestination>[
+      _WorkspaceDestination.dashboard,
+      _WorkspaceDestination.directory,
+      if (widget.session.isGlobalAdmin) _WorkspaceDestination.countries,
     ];
+    final selected = destinations[_selectedIndex.clamp(0, destinations.length - 1).toInt()];
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: <Widget>[const GoYeLogo(size: 34), const SizedBox(width: 10), Text(context.l10n.appName)],
+          children: <Widget>[
+            const GoYeLogo(size: 34),
+            const SizedBox(width: 10),
+            Text(context.l10n.appName),
+          ],
         ),
         actions: <Widget>[
           _LanguageButton(ref: ref),
@@ -59,45 +71,64 @@ class HomeShell extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.verified_user_outlined, size: 56),
-              const SizedBox(height: 16),
-              Text(context.l10n.signedInSecurely, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                session.roles.isEmpty ? context.l10n.noActiveRole : session.roles.join(' · '),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(context.l10n.workspaceReady),
-            ],
-          ),
-        ),
+      body: switch (selected) {
+        _WorkspaceDestination.dashboard => _DashboardWelcome(session: widget.session),
+        _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
+        _WorkspaceDestination.countries => const CountrySelectorScreen(),
+      },
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        destinations: destinations.map((destination) => _navigationDestination(context, destination)).toList(),
+        onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
       ),
-      bottomNavigationBar: destinations.length > 1
-          ? NavigationBar(
-              selectedIndex: 0,
-              destinations: destinations,
-              onDestinationSelected: (_) {},
-            )
-          : null,
     );
   }
 
-  static bool _canUseUnassignedPool(String role) {
-    return <String>{
-      'GLOBAL_ADMIN',
-      'COUNTRY_ADMIN',
-      'REGION_LEADER',
-      'PROVINCE_LEADER',
-      'ZONE_LEADER',
-      'AREA_LEADER',
-    }.contains(role);
+  NavigationDestination _navigationDestination(BuildContext context, _WorkspaceDestination destination) {
+    return switch (destination) {
+      _WorkspaceDestination.dashboard => NavigationDestination(
+          icon: const Icon(Icons.dashboard_outlined),
+          label: context.l10n.dashboard,
+        ),
+      _WorkspaceDestination.directory => NavigationDestination(
+          icon: const Icon(Icons.account_tree_outlined),
+          label: context.l10n.text('hierarchy'),
+        ),
+      _WorkspaceDestination.countries => NavigationDestination(
+          icon: const Icon(Icons.public_outlined),
+          label: context.l10n.countries,
+        ),
+    };
+  }
+}
+
+class _DashboardWelcome extends StatelessWidget {
+  const _DashboardWelcome({required this.session});
+
+  final Session session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(Icons.verified_user_outlined, size: 56),
+            const SizedBox(height: 16),
+            Text(context.l10n.signedInSecurely, style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              session.roles.isEmpty ? context.l10n.noActiveRole : session.roles.join(' · '),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(context.l10n.workspaceReady),
+          ],
+        ),
+      ),
+    );
   }
 }
 

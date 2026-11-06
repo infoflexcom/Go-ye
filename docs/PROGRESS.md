@@ -14,7 +14,7 @@ Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. P
 - [x] **3.1 OTP login, secure storage and role-aware navigation:** approved-identity OTP request/verification is wired to the existing API; access/refresh material and a stable device identifier use platform secure storage only, refresh is handled on authenticated API calls, and navigation is role-gated.
 - [x] **3.2 Brand, theme and dark mode:** RCCG `logo.jpg` drives in-app logo/restoring splash, Android launcher generation and a tracked Windows `.ico`; INFOFLEX is limited to About/Built by. Material light/dark themes follow the system and offer an explicit toggle.
 - [x] **3.3 English/Yoruba localisation:** locale delegate, switcher and key-complete English/Yoruba catalog cover the initial client workflow; adding another catalog entry does not require widget changes.
-- [ ] **3.4 Hierarchy browser and Global Admin country selector**
+- [x] **3.4 Hierarchy browser and Global Admin country selector:** hierarchy browser renders only the signed-in actor’s RLS-scoped directory response; Global Admin receives country totals, selection and selected-country Region totals from the existing reporting API.
 - [ ] **3.5 Online New Decision, converts and Unassigned Pool**
 - [ ] **3.6 Scoped counts**
 - [ ] **3.7 Phone and desktop adaptive layouts**

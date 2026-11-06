@@ -145,3 +145,22 @@ int _requiredInt(Map<String, Object?> value, String key) {
   }
   throw FormatException('The server response did not contain $key.');
 }
+
+class SummaryTotal {
+  const SummaryTotal({required this.id, required this.code, required this.name, required this.total});
+
+  final String id;
+  final String code;
+  final String name;
+  final int total;
+
+  factory SummaryTotal.fromJson(Map<String, Object?> value) {
+    final rawTotal = value['total'];
+    return SummaryTotal(
+      id: _requiredString(value, 'id'),
+      code: _requiredString(value, 'code'),
+      name: _requiredString(value, 'name'),
+      total: rawTotal is num ? rawTotal.toInt() : 0,
+    );
+  }
+}
