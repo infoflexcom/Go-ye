@@ -88,7 +88,8 @@ jobs:
         working-directory: app
         run: |
           for test_file in $(find test -name '*_test.dart' | sort); do
-            flutter test "$test_file" || {
+            flutter test "$test_file" -r expanded > flutter-test.txt 2>&1 || {
+              grep -E -A 8 -B 4 '══╡|Expected:|Actual:|Which:|TestFailure|Exception' flutter-test.txt | sed 's/^/::error::/' || true
               echo "::error file=$test_file::Flutter test failed: $test_file"
               exit 1
             }
