@@ -20,7 +20,7 @@ The bootstrap script is intentionally committed because this Linux workspace doe
 
 ## Branding
 
-`assets/branding/logo.jpg` is the approved RCCG source used by the app logo, restoring splash, Android launcher images and the Windows `goye.ico`. Run `./tool/bootstrap_platforms.sh` after installing Flutter to regenerate runner projects and restore native icon files. `tool/bootstrap_windows.ps1` performs the equivalent Windows runner/icon setup for CI.
+`assets/branding/logo.jpg` is the approved RCCG source used by the app logo, restoring splash, Android launcher images and the Windows `goye.ico`. Pre-rendered Android/iOS launcher renditions are tracked solely so runner bootstrap does not depend on a system image-conversion binary; they are derived from that approved logo. Run `./tool/bootstrap_platforms.sh` after installing Flutter to regenerate runner projects and restore native icon files. `tool/bootstrap_windows.ps1` performs the equivalent Windows runner/icon setup for CI.
 
 `assets/branding/infoflex-logo.png` is used only on the in-app **About / Built by** surface. It is not used as an app icon, splash image or general client branding.
 

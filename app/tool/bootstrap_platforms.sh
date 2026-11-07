@@ -25,20 +25,17 @@ flutter create --no-pub --platforms=android,ios,windows --project-name goye --or
 mkdir -p windows/runner/resources
 cp assets/branding/goye.ico windows/runner/resources/app_icon.ico
 
-# Replace every generated iOS AppIcon rendition with the approved logo. The
-# runner's launch storyboard then hands off to the in-app branded splash.
+# Pre-rendered native renditions are derived from the approved logo.jpg and
+# tracked so bootstrap works on Flutter runners without ImageMagick. The runner
+# launch storyboard then hands off to the in-app branded splash.
 if [ -d ios/Runner/Assets.xcassets/AppIcon.appiconset ]; then
-  find ios/Runner/Assets.xcassets/AppIcon.appiconset -name '*.png' -type f -exec sh -c '
-    size=$(identify -format "%wx%h" "$1")
-    convert assets/branding/logo.jpg -background white -gravity center -extent "$size" "$1"
-  ' sh {} \;
+  cp assets/branding/ios_app_icons/*.png ios/Runner/Assets.xcassets/AppIcon.appiconset/
 fi
 
-# Replace the generated Android launcher densities with images rendered from
-# logo.jpg. The in-app restoring screen is the branded cross-platform splash.
+# Replace the generated Android launcher densities with the pre-rendered RCCG
+# logo assets. The in-app restoring screen is the branded cross-platform splash.
 for spec in 'mipmap-mdpi 48' 'mipmap-hdpi 72' 'mipmap-xhdpi 96' 'mipmap-xxhdpi 144' 'mipmap-xxxhdpi 192'; do
   set -- $spec
   mkdir -p "android/app/src/main/res/$1"
-  convert assets/branding/logo.jpg -background white -gravity center -extent "$2x$2" \
-    "android/app/src/main/res/$1/ic_launcher.png"
+  cp "assets/branding/android_launcher/ic_launcher_$2.png" "android/app/src/main/res/$1/ic_launcher.png"
 done
