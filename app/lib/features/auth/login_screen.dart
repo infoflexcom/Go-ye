@@ -76,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                           decoration: InputDecoration(
                             labelText: context.l10n.phoneOrEmail,
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _requestCode(),
                         ),
@@ -108,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                           decoration: InputDecoration(
                             labelText: context.l10n.sixDigitCode,
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _verifyCode(),
                         ),

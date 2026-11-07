@@ -83,13 +83,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test integration_test
       - name: Analyse Dart
         working-directory: app
-        run: |
-          set +e
-          flutter analyze --machine > analysis.txt
-          status=$?
-          sed 's/^/::error::/' analysis.txt
-          cat analysis.txt
-          exit $status
+        run: flutter analyze
       - name: Run Flutter tests
         working-directory: app
         run: flutter test
