@@ -41,7 +41,10 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./backend:/workspace/backend
+      # Keep the image's workspace dependencies intact. Mounting the entire
+      # backend directory would shadow its nested npm workspace node_modules.
+      - ./backend/src:/workspace/backend/src
+      - ./backend/migrations:/workspace/backend/migrations
     command: sh -c "npm run migration:up && npm run start:dev"
     healthcheck:
       test:
