@@ -162,7 +162,10 @@ jobs:
             flutter test integration_test/otp_client_flow_test.dart -r expanded > flutter-integration-test.txt 2>&1
             status=$?
             if [ "$status" -ne 0 ]; then
-              grep -E -A 8 -B 4 '══╡|Expected:|Actual:|Which:|TestFailure|Exception' flutter-integration-test.txt | sed 's/^/::error::/' || true
+              diagnostic="$(
+                tail -n 80 flutter-integration-test.txt | sed -e 's/%/%25/g' -e 's/\r//g' -e ':a;N;$!ba;s/\n/%0A/g'
+              )"
+              echo "::error title=Android integration test failure::$diagnostic"
             fi
             exit "$status"
 
