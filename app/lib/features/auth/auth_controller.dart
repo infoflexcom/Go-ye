@@ -43,9 +43,9 @@ class AuthState {
 
 class AuthController extends StateNotifier<AuthState> {
   AuthController({required ApiClient api, required SessionStore sessionStore})
-    : _api = api,
-      _sessionStore = sessionStore,
-      super(const AuthState.restoring()) {
+      : _api = api,
+        _sessionStore = sessionStore,
+        super(const AuthState.restoring()) {
     unawaited(_restore());
   }
 

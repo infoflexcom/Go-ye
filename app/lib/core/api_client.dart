@@ -23,9 +23,9 @@ class ApiClient {
     required String baseUrl,
     required SessionStore sessionStore,
     http.Client? httpClient,
-  }) : _baseUri = _normaliseBaseUri(baseUrl),
-       _sessionStore = sessionStore,
-       _http = httpClient ?? http.Client();
+  })  : _baseUri = _normaliseBaseUri(baseUrl),
+        _sessionStore = sessionStore,
+        _http = httpClient ?? http.Client();
 
   final Uri _baseUri;
   final SessionStore _sessionStore;

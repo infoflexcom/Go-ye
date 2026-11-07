@@ -27,8 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
-    final awaitingCode =
-        state.status == AuthStatus.awaitingCode ||
+    final awaitingCode = state.status == AuthStatus.awaitingCode ||
         state.status == AuthStatus.submitting && state.identity != null;
     final loading = state.status == AuthStatus.submitting;
 

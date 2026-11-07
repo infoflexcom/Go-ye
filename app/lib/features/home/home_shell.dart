@@ -51,11 +51,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final desktopLayout = MediaQuery.sizeOf(context).width >= 800;
     final content = switch (selected) {
       _WorkspaceDestination.dashboard => _DashboardWelcome(
-        session: widget.session,
-      ),
+          session: widget.session,
+        ),
       _WorkspaceDestination.newDecision => NewDecisionScreen(
-        isGlobalAdmin: widget.session.isGlobalAdmin,
-      ),
+          isGlobalAdmin: widget.session.isGlobalAdmin,
+        ),
       _WorkspaceDestination.converts => const ConvertsListScreen(),
       _WorkspaceDestination.unassigned => const UnassignedPoolScreen(),
       _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
@@ -147,29 +147,29 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   ) {
     return switch (destination) {
       _WorkspaceDestination.dashboard => NavigationDestination(
-        icon: const Icon(Icons.dashboard_outlined),
-        label: context.l10n.dashboard,
-      ),
+          icon: const Icon(Icons.dashboard_outlined),
+          label: context.l10n.dashboard,
+        ),
       _WorkspaceDestination.newDecision => NavigationDestination(
-        icon: const Icon(Icons.person_add_alt_1_outlined),
-        label: context.l10n.newDecision,
-      ),
+          icon: const Icon(Icons.person_add_alt_1_outlined),
+          label: context.l10n.newDecision,
+        ),
       _WorkspaceDestination.converts => NavigationDestination(
-        icon: const Icon(Icons.people_outline),
-        label: context.l10n.converts,
-      ),
+          icon: const Icon(Icons.people_outline),
+          label: context.l10n.converts,
+        ),
       _WorkspaceDestination.unassigned => NavigationDestination(
-        icon: const Icon(Icons.assignment_late_outlined),
-        label: context.l10n.unassigned,
-      ),
+          icon: const Icon(Icons.assignment_late_outlined),
+          label: context.l10n.unassigned,
+        ),
       _WorkspaceDestination.directory => NavigationDestination(
-        icon: const Icon(Icons.account_tree_outlined),
-        label: context.l10n.text('hierarchy'),
-      ),
+          icon: const Icon(Icons.account_tree_outlined),
+          label: context.l10n.text('hierarchy'),
+        ),
       _WorkspaceDestination.countries => NavigationDestination(
-        icon: const Icon(Icons.public_outlined),
-        label: context.l10n.countries,
-      ),
+          icon: const Icon(Icons.public_outlined),
+          label: context.l10n.countries,
+        ),
     };
   }
 

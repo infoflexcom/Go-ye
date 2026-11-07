@@ -108,7 +108,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
                 onChanged: _submitting
                     ? null
                     : (String? value) =>
-                          setState(() => _registrationUnitId = value),
+                        setState(() => _registrationUnitId = value),
                 validator: (String? value) => value == null
                     ? context.l10n.text('selectRegistrationUnit')
                     : null,
@@ -133,7 +133,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
             onChanged: _submitting
                 ? null
                 : (String? value) =>
-                      setState(() => _consentMethod = value ?? 'DIGITAL'),
+                    setState(() => _consentMethod = value ?? 'DIGITAL'),
           ),
           const SizedBox(height: 8),
           CheckboxListTile(
@@ -143,7 +143,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
             onChanged: _submitting
                 ? null
                 : (bool? value) =>
-                      setState(() => _consentGranted = value ?? false),
+                    setState(() => _consentGranted = value ?? false),
           ),
           if (!_consentGranted)
             Padding(
@@ -175,9 +175,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
     }
     setState(() => _submitting = true);
     try {
-      final saved = await ref
-          .read(convertsRepositoryProvider)
-          .create(
+      final saved = await ref.read(convertsRepositoryProvider).create(
             fullName: _fullName.text.trim(),
             phone: _phone.text.trim(),
             address: _address.text.trim(),

@@ -53,9 +53,8 @@ class Session {
       roles: rawRoles is List
           ? rawRoles.whereType<String>().toSet()
           : const <String>{},
-      homePath: claims['homePath'] is String
-          ? claims['homePath'] as String
-          : null,
+      homePath:
+          claims['homePath'] is String ? claims['homePath'] as String : null,
     );
   }
 
@@ -73,12 +72,10 @@ class Session {
         'refreshTokenExpiresInSeconds',
       ),
       userId: _requiredString(value, 'userId'),
-      roles: roles is List
-          ? roles.whereType<String>().toSet()
-          : const <String>{},
-      homePath: value['homePath'] is String
-          ? value['homePath'] as String
-          : null,
+      roles:
+          roles is List ? roles.whereType<String>().toSet() : const <String>{},
+      homePath:
+          value['homePath'] is String ? value['homePath'] as String : null,
     );
   }
 }
@@ -108,9 +105,8 @@ class OrgUnit {
       type: _requiredString(value, 'type'),
       name: _requiredString(value, 'name'),
       code: _requiredString(value, 'code'),
-      parentId: value['parentId'] is String
-          ? value['parentId'] as String
-          : null,
+      parentId:
+          value['parentId'] is String ? value['parentId'] as String : null,
       path: _requiredString(value, 'path'),
       isActive: value['isActive'] == true,
     );
@@ -132,14 +128,11 @@ List<Map<String, Object?>> objectListFromJson(String source) {
   if (decoded is! List) {
     throw const FormatException('The server returned an invalid list.');
   }
-  return decoded
-      .whereType<Map>()
-      .map((Map<Object?, Object?> item) {
-        return item.map<String, Object?>((Object? key, Object? value) {
-          return MapEntry<String, Object?>(key.toString(), value);
-        });
-      })
-      .toList(growable: false);
+  return decoded.whereType<Map>().map((Map<Object?, Object?> item) {
+    return item.map<String, Object?>((Object? key, Object? value) {
+      return MapEntry<String, Object?>(key.toString(), value);
+    });
+  }).toList(growable: false);
 }
 
 Map<String, Object?> _jwtClaims(String token) {
@@ -223,9 +216,8 @@ class ConvertRecord {
       phone: value['phone'] is String ? value['phone'] as String : null,
       address: value['address'] is String ? value['address'] as String : null,
       registeredAtUnitId: _requiredString(value, 'registeredAtUnitId'),
-      parishId: value['parishId'] is String
-          ? value['parishId'] as String
-          : null,
+      parishId:
+          value['parishId'] is String ? value['parishId'] as String : null,
       stage: _requiredString(value, 'stage'),
       createdAt: _date(value['createdAt']),
     );

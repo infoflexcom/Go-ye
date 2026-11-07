@@ -63,8 +63,8 @@ final convertsProvider = FutureProvider.autoDispose<ConvertPage>((Ref ref) {
 
 final unassignedConvertsProvider =
     FutureProvider.autoDispose<List<UnassignedConvert>>((Ref ref) {
-      return ref.watch(convertsRepositoryProvider).listUnassigned();
-    });
+  return ref.watch(convertsRepositoryProvider).listUnassigned();
+});
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((Ref ref) {
   return ReportsRepository(ref.watch(apiClientProvider));
@@ -72,41 +72,40 @@ final reportsRepositoryProvider = Provider<ReportsRepository>((Ref ref) {
 
 final scopedCountProvider = FutureProvider.autoDispose
     .family<ScopedCount?, Session>((Ref ref, Session session) async {
-      final reports = ref.watch(reportsRepositoryProvider);
-      if (session.isGlobalAdmin) {
-        return reports.grandTotal();
-      }
-      const reportingRoles = <String>{
-        'COUNTRY_ADMIN',
-        'REGION_LEADER',
-        'PROVINCE_LEADER',
-        'ZONE_LEADER',
-        'AREA_LEADER',
-        'PARISH_PASTOR',
-        'SOUL_WINNER',
-        'FOLLOW_UP_WORKER',
-      };
-      if (session.homePath == null ||
-          !session.roles.any(reportingRoles.contains)) {
-        return null;
-      }
-      final units = await ref.watch(directoryRepositoryProvider).listUnits();
-      OrgUnit? home;
-      for (final unit in units) {
-        if (unit.path == session.homePath) {
-          home = unit;
-          break;
-        }
-      }
-      return home == null ? null : reports.countForUnit(home);
-    });
+  final reports = ref.watch(reportsRepositoryProvider);
+  if (session.isGlobalAdmin) {
+    return reports.grandTotal();
+  }
+  const reportingRoles = <String>{
+    'COUNTRY_ADMIN',
+    'REGION_LEADER',
+    'PROVINCE_LEADER',
+    'ZONE_LEADER',
+    'AREA_LEADER',
+    'PARISH_PASTOR',
+    'SOUL_WINNER',
+    'FOLLOW_UP_WORKER',
+  };
+  if (session.homePath == null || !session.roles.any(reportingRoles.contains)) {
+    return null;
+  }
+  final units = await ref.watch(directoryRepositoryProvider).listUnits();
+  OrgUnit? home;
+  for (final unit in units) {
+    if (unit.path == session.homePath) {
+      home = unit;
+      break;
+    }
+  }
+  return home == null ? null : reports.countForUnit(home);
+});
 
 final regionTotalsProvider = FutureProvider.autoDispose
     .family<List<SummaryTotal>, String>((Ref ref, String countryId) {
-      return ref.watch(adminReportsRepositoryProvider).listRegions(countryId);
-    });
+  return ref.watch(adminReportsRepositoryProvider).listRegions(countryId);
+});
 
 final convertDetailProvider = FutureProvider.autoDispose
     .family<ConvertRecord, String>((Ref ref, String convertId) {
-      return ref.watch(convertsRepositoryProvider).get(convertId);
-    });
+  return ref.watch(convertsRepositoryProvider).get(convertId);
+});

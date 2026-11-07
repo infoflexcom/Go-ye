@@ -16,7 +16,7 @@ abstract class SessionStore {
 /// falls back to SharedPreferences or a file because refresh tokens are secrets.
 class SecureSessionStore implements SessionStore {
   SecureSessionStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+      : _storage = storage ?? const FlutterSecureStorage();
 
   static const String _sessionKey = 'goye.session.v1';
   static const String _deviceKey = 'goye.device-id.v1';

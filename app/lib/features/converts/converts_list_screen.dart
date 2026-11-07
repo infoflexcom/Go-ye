@@ -101,14 +101,14 @@ class _DesktopConvertTable extends StatelessWidget {
                   rows: page.items
                       .map(
                         (ConvertRecord convert) => DataRow(
-                          onSelectChanged: (_) => Navigator.of(context)
-                              .push<void>(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => ConvertDetailScreen(
-                                    convertId: convert.id,
-                                  ),
-                                ),
+                          onSelectChanged: (_) =>
+                              Navigator.of(context).push<void>(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ConvertDetailScreen(
+                                convertId: convert.id,
                               ),
+                            ),
+                          ),
                           cells: <DataCell>[
                             DataCell(Text(convert.fullName)),
                             DataCell(Text(convert.phone ?? '—')),
@@ -142,9 +142,7 @@ class ConvertDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.text('convertDetail'))),
-      body: ref
-          .watch(convertDetailProvider(convertId))
-          .when(
+      body: ref.watch(convertDetailProvider(convertId)).when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (Object error, StackTrace stackTrace) =>
                 Center(child: Text(context.l10n.text('convertLoadError'))),

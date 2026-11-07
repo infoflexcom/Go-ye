@@ -46,8 +46,8 @@ class GoYeApp extends ConsumerWidget {
       home: switch (auth.status) {
         AuthStatus.restoring => const _RestoringSessionScreen(),
         AuthStatus.signedIn when auth.session != null => HomeShell(
-          session: auth.session!,
-        ),
+            session: auth.session!,
+          ),
         _ => const LoginScreen(),
       },
     );

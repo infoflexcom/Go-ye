@@ -76,9 +76,11 @@ void main() {
 String _jwt() {
   String encode(Object value) =>
       base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
-  return '${encode(<String, Object?>{'alg': 'none'})}.${encode(<String, Object?>{
-    'sub': 'integration-user',
-    'roles': <String>['AREA_LEADER'],
-    'homePath': 'n1.n2',
-  })}.signature';
+  return '${encode(<String, Object?>{
+        'alg': 'none'
+      })}.${encode(<String, Object?>{
+        'sub': 'integration-user',
+        'roles': <String>['AREA_LEADER'],
+        'homePath': 'n1.n2',
+      })}.signature';
 }

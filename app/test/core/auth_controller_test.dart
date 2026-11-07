@@ -66,5 +66,8 @@ void main() {
 String _jwt(Map<String, Object?> claims) {
   String encode(Object value) =>
       base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
-  return '${encode(<String, Object?>{'alg': 'none', 'typ': 'JWT'})}.${encode(claims)}.signature';
+  return '${encode(<String, Object?>{
+        'alg': 'none',
+        'typ': 'JWT'
+      })}.${encode(claims)}.signature';
 }
