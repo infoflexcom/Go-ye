@@ -21,6 +21,7 @@ void main() {
         home: _LocalizedText(),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('Káàbọ̀ sí Go-Ye'), findsOneWidget);
   });
