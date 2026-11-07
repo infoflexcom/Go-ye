@@ -16,7 +16,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1/ # Android em
 flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3000/api/v1/
 ```
 
-The bootstrap script is intentionally committed because this Linux workspace does not include Flutter, Android SDK, Java or a Windows toolchain. It produces the standard platform runner projects from the pinned/available stable Flutter SDK while preserving `lib/` and `test/`.
+The bootstrap script is intentionally committed because this Linux workspace does not include Flutter, Android SDK, Java or a Windows toolchain. It replaces only the tracked one-file platform placeholders, then produces standard runner projects from the available stable Flutter SDK while preserving `lib/` and `test/`. Dependency resolution is intentionally a separate `flutter pub get` step.
 
 ## Branding
 

@@ -1,9 +1,23 @@
 #!/usr/bin/env sh
 set -eu
 
+# Phase 0 carried lightweight platform README placeholders instead of generated
+# runners. Remove only those exact placeholders; never replace a real runner.
+remove_placeholder_runner() {
+  platform="$1"
+  if [ -f "$platform/README.md" ] && [ "$(find "$platform" -type f | wc -l | tr -d ' ')" = "1" ]; then
+    rm -rf "$platform"
+  fi
+}
+
+remove_placeholder_runner android
+remove_placeholder_runner ios
+remove_placeholder_runner windows
+
 # Generates or refreshes Android, iOS and Windows runners without replacing
-# lib/ or test/. The source brand assets remain under app/assets/branding.
-flutter create --platforms=android,ios,windows --project-name goye --org org.rccg .
+# lib/ or test/. Dependency resolution happens in the subsequent `flutter pub
+# get` CI step, so runner generation cannot mask a package-resolution failure.
+flutter create --no-pub --platforms=android,ios,windows --project-name goye --org org.rccg .
 
 # Flutter's generated Windows runner expects this exact icon file. It is built
 # from the approved RCCG logo (not the INFOFLEX logo) and is intentionally

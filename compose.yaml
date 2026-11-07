@@ -20,6 +20,10 @@ services:
       start_period: 5s
 
   api:
+    # `.env` supplies the security configuration for development only. The
+    # explicit values below retain control of the container network endpoint.
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: infra/docker/api.Dockerfile
