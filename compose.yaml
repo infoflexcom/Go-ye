@@ -45,7 +45,9 @@ services:
       # backend directory would shadow its nested npm workspace node_modules.
       - ./backend/src:/workspace/backend/src
       - ./backend/migrations:/workspace/backend/migrations
-    command: sh -c "npm run migration:up && npm run start:dev"
+    # Nest relies on TypeScript-emitted decorator metadata. Compile before
+    # startup instead of using the fast transpile-only watcher.
+    command: sh -c "npm run build && npm run migration:up && npm run start"
     healthcheck:
       test:
         [
