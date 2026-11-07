@@ -87,25 +87,12 @@ jobs:
       - name: Run Flutter tests
         working-directory: app
         run: |
-          set +e
-          flutter test --machine > flutter-test.jsonl
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          for line in Path('flutter-test.jsonl').read_text().splitlines():
-              try:
-                  event = json.loads(line)
-              except json.JSONDecodeError:
-                  continue
-              if event.get('type') == 'error':
-                  message = str(event.get('error', 'Flutter test failure')).replace('%', '%25').replace('\r', '').replace('\n', '%0A')
-                  print(f'::error::{message}')
-          PY
-          fi
-          exit $status
+          for test_file in $(find test -name '*_test.dart' | sort); do
+            flutter test "$test_file" || {
+              echo "::error file=$test_file::Flutter test failed: $test_file"
+              exit 1
+            }
+          done
 
   android-debug-build:
     name: Android debug build
