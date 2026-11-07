@@ -65,6 +65,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).first, 'Ada Example');
     await tester.tap(find.text('Save decision'));
