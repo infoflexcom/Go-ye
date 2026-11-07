@@ -225,3 +225,12 @@ When enabled, the API preserves only the final four digits (`***0044`) in phone 
 The Flutter client receives `API_BASE_URL` through a compile-time `--dart-define`; no client uses a platform-specific database or service. Android and Windows must be launched with URLs resolving to the same Go-Ye NestJS API, which remains the sole gateway to the shared PostgreSQL database.
 
 The copied `app/assets/branding/logo.jpg` is derived only from the approved RCCG `assets/logo.jpg` and is used for the in-app logo/restoring splash, Android launcher rendering and Windows `goye.ico`. `infoflex-logo.png`, copied from `assets/logo-source.png`, is displayed only in the About/Built by dialog.
+
+## ADR-024 — Configurable follow-up cadence snapshots
+
+**Date:** 2026-11-07
+**Status:** Accepted
+
+The first Phase 4 increment stores the approved cadence as Global Admin-managed database rows: a 24-hour call, Day-3 prayer, Day-7 visit and a weekly check-in. The weekly check-in’s first occurrence defaults to Day 14, one week after the Day-7 visit, and carries a seven-day recurrence interval. Global Admin may change offsets or deactivate a step without an application release; each change is tamper-evidently audited.
+
+Parish assignment reads the active cadence transactionally and creates occurrence one of every active step. A unique `(convert, cadence step, occurrence)` key prevents duplicate initial tasks and protects later scheduler work. Configuration changes affect only newly assigned converts; scheduled history is never silently rescheduled. The next Phase 4 task will materialise subsequent weekly occurrences and durable idempotent job delivery. PostgreSQL cannot remove an enum label, so the migration’s rollback drops cadence schema/rows but intentionally leaves an unused `WEEKLY_CHECK_IN` label.

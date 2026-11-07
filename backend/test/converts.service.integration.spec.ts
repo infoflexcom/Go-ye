@@ -4,6 +4,7 @@ import { AuditService } from '../src/audit/audit.service.js';
 import type { AuthenticatedActor } from '../src/authorization/authorization.types.js';
 import { ConvertsService } from '../src/converts/converts.service.js';
 import { DatabaseService } from '../src/database/database.service.js';
+import { FollowUpCadenceService } from '../src/follow-up/follow-up-cadence.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
 import { PrivacyRemovalService } from '../src/privacy/privacy-removal.service.js';
 import { PrivacySettingsService } from '../src/privacy/privacy-settings.service.js';
@@ -29,6 +30,7 @@ describe('ConvertsService', () => {
   let converts: ConvertsService;
   let privacy: PrivacyRemovalService;
   let privacySettings: PrivacySettingsService;
+  let cadence: FollowUpCadenceService;
   let areaActor: TestActor;
   let parishActor: TestActor;
   let privacyActor: TestActor;
@@ -47,6 +49,7 @@ describe('ConvertsService', () => {
     const encryption = new FieldEncryptionService(config);
     const audit = new AuditService();
     privacySettings = new PrivacySettingsService(database, audit, config);
+    cadence = new FollowUpCadenceService(database, audit, config);
     converts = new ConvertsService(database, encryption, audit, config, privacySettings);
     privacy = new PrivacyRemovalService(database, encryption, audit, config);
 
@@ -243,6 +246,11 @@ describe('ConvertsService', () => {
       { task_type: 'CALL_24H', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
       { task_type: 'PRAYER_DAY_3', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
       { task_type: 'VISIT_DAY_7', parish_id: units.get('NG-PAR-A')?.id, status: 'PENDING' },
+      {
+        task_type: 'WEEKLY_CHECK_IN',
+        parish_id: units.get('NG-PAR-A')?.id,
+        status: 'PENDING',
+      },
     ]);
     await expect(
       converts.assignToParish(areaActor, existing.rows[0].id, {
@@ -262,7 +270,91 @@ describe('ConvertsService', () => {
       `SELECT count(*) FROM follow_up_tasks WHERE convert_id = $1`,
       [created.id],
     );
-    expect(scheduled.rows[0].count).toBe('3');
+    expect(scheduled.rows[0].count).toBe('4');
+  });
+
+  it('uses the Global Admin cadence configuration when parish follow-up begins', async () => {
+    await expect(cadence.list(areaActor)).rejects.toThrow(/Global Admin/i);
+
+    const defaults = await cadence.list(globalActor);
+    expect(defaults.map((step) => [step.code, step.dueOffsetHours, step.recurrenceDays])).toEqual([
+      ['CALL_24H', 24, undefined],
+      ['PRAYER_DAY_3', 72, undefined],
+      ['VISIT_DAY_7', 168, undefined],
+      ['WEEKLY_CHECK_IN', 336, 7],
+    ]);
+
+    await expect(cadence.update(globalActor, 'CALL_24H', { recurrenceDays: 7 })).rejects.toThrow(
+      /Only weekly check-ins/i,
+    );
+    await expect(cadence.update(areaActor, 'CALL_24H', { dueOffsetHours: 48 })).rejects.toThrow(
+      /Global Admin/i,
+    );
+
+    await expect(
+      cadence.update(globalActor, 'CALL_24H', { dueOffsetHours: 48 }),
+    ).resolves.toMatchObject({ code: 'CALL_24H', dueOffsetHours: 48, isActive: true });
+
+    const created = await converts.create(parishActor, {
+      fullName: 'Configured Cadence Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const scheduled = await testDatabase.pool.query<{
+      task_type: string;
+      occurrence_number: number;
+      due_offset_seconds: string;
+    }>(
+      `SELECT task_type::text, occurrence_number,
+              extract(epoch FROM task.due_at - convert.assigned_at)::text AS due_offset_seconds
+       FROM follow_up_tasks task
+       JOIN converts convert ON convert.id = task.convert_id
+       WHERE task.convert_id = $1
+       ORDER BY task.task_type`,
+      [created.id],
+    );
+    expect(scheduled.rows).toEqual([
+      { task_type: 'CALL_24H', occurrence_number: 1, due_offset_seconds: '172800.000000' },
+      { task_type: 'PRAYER_DAY_3', occurrence_number: 1, due_offset_seconds: '259200.000000' },
+      { task_type: 'VISIT_DAY_7', occurrence_number: 1, due_offset_seconds: '604800.000000' },
+      {
+        task_type: 'WEEKLY_CHECK_IN',
+        occurrence_number: 1,
+        due_offset_seconds: '1209600.000000',
+      },
+    ]);
+
+    const audited = await testDatabase.pool.query<{
+      action: string;
+      metadata: Record<string, unknown>;
+    }>(`SELECT action, metadata FROM audit_log WHERE resource_type = 'FOLLOW_UP_CADENCE_STEP'`);
+    expect(audited.rows).toEqual([
+      {
+        action: 'FOLLOW_UP_CADENCE_UPDATED',
+        metadata: {
+          code: 'CALL_24H',
+          dueOffsetHours: 48,
+          recurrenceDays: null,
+          isActive: true,
+        },
+      },
+    ]);
+
+    await expect(
+      cadence.update(globalActor, 'WEEKLY_CHECK_IN', { isActive: false }),
+    ).resolves.toMatchObject({
+      code: 'WEEKLY_CHECK_IN',
+      isActive: false,
+    });
+    const withoutWeeklyCheckIn = await converts.create(parishActor, {
+      fullName: 'No Weekly Check-in Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const weeklyTask = await testDatabase.pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count FROM follow_up_tasks
+       WHERE convert_id = $1 AND task_type = 'WEEKLY_CHECK_IN'`,
+      [withoutWeeklyCheckIn.id],
+    );
+    expect(weeklyTask.rows[0].count).toBe('0');
   });
 
   it('advances the fixed stage pipeline one step at a time and retains an append-only encrypted timeline', async () => {

@@ -1,0 +1,3 @@
+-- PostgreSQL does not support removing a single enum label safely. Roll back
+-- 0015_follow_up_cadence before this migration; the unused WEEKLY_CHECK_IN
+-- label remains in follow_up_task_type and has no rows or active schema use.

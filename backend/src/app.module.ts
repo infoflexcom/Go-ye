@@ -11,6 +11,7 @@ import { PrivacyModule } from './privacy/privacy.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { DirectoryModule } from './directory/directory.module.js';
 import { HealthModule } from './health/health.module.js';
+import { FollowUpModule } from './follow-up/follow-up.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { HealthModule } from './health/health.module.js';
     ReportsModule,
     AuthorizationModule,
     HealthModule,
+    FollowUpModule,
   ],
 })
 export class AppModule {}

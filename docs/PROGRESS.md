@@ -5,9 +5,18 @@
 
 ## Current gate
 
-**Phase 3 — first shared Android/Windows client: IN PROGRESS. Phase 2 is tagged `phase-2-complete`.**
+**Phase 4 — follow-up engine and journey completion: IN PROGRESS. Phase 2 is tagged `phase-2-complete`; Phase 3 remains untagged pending its real Android/Windows shared-server acceptance gate.**
 
-Phase 3 connects the one Flutter client to the existing NestJS/PostgreSQL API. Phone and Windows clients are configured with the same `API_BASE_URL`, so authorised records are read from and written to the same server database. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+Phase 4 continues the same NestJS/PostgreSQL authority boundary. No real convert, church hierarchy, identity, provider or production data has been entered into the repository or its development stack; Nigeria/Ghana records are explicitly guarded sample/test data.
+
+## Phase 4 task record
+
+- [x] **4.1 Configurable cadence engine:** a Global Admin-managed, auditable database cadence now seeds 24-hour call, Day-3 prayer, Day-7 visit and Day-14 first weekly check-in tasks when a convert enters parish follow-up. Each task is tied to a cadence step and occurrence number, so a unique constraint prevents duplicate first occurrences; changes affect new assignments only. The recurring materialisation job is deliberately deferred to 4.2.
+- [ ] **4.2 Idempotent server-side job queue/scheduler**
+- [ ] **4.3 Today list, outcomes/notes and Android/Windows notifications**
+- [ ] **4.4 Overdue escalation and Neglected Converts lists**
+- [ ] **4.5 Baptism and planting journey completion tracking**
+- [ ] **4.6 Simulated 30-day timeline test**
 
 ## Phase 3 task record
 
