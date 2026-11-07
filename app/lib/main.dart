@@ -35,6 +35,7 @@ class GoYeApp extends ConsumerWidget {
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
         AppLocalizations.delegate,
         AppLocalizations.yorubaMaterialFallbackDelegate,
+        AppLocalizations.yorubaCupertinoFallbackDelegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
       ],

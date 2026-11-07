@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Compact, data-led localisation catalog for the first client increment.
@@ -12,6 +13,8 @@ class AppLocalizations {
       _AppLocalizationsDelegate();
   static const LocalizationsDelegate<MaterialLocalizations>
       yorubaMaterialFallbackDelegate = _YorubaMaterialLocalizationsDelegate();
+  static const LocalizationsDelegate<CupertinoLocalizations>
+      yorubaCupertinoFallbackDelegate = _YorubaCupertinoLocalizationsDelegate();
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('yo'),
@@ -233,6 +236,25 @@ class _YorubaMaterialLocalizationsDelegate
 
   @override
   bool shouldReload(_YorubaMaterialLocalizationsDelegate old) => false;
+}
+
+/// MaterialApp also supplies Cupertino localizations for shared platform
+/// behavior. Use Flutter's English default for those stock strings until a
+/// Yoruba Cupertino catalog becomes available.
+class _YorubaCupertinoLocalizationsDelegate
+    extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _YorubaCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'yo';
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) async {
+    return const DefaultCupertinoLocalizations();
+  }
+
+  @override
+  bool shouldReload(_YorubaCupertinoLocalizationsDelegate old) => false;
 }
 
 extension AppLocalizationsContext on BuildContext {

@@ -13,6 +13,7 @@ void main() {
         localizationsDelegates: <LocalizationsDelegate<dynamic>>[
           AppLocalizations.delegate,
           AppLocalizations.yorubaMaterialFallbackDelegate,
+          AppLocalizations.yorubaCupertinoFallbackDelegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
         ],
