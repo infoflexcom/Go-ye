@@ -59,7 +59,9 @@ void main() {
             GlobalWidgetsLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: NewDecisionScreen(isGlobalAdmin: false),
+          home: Scaffold(
+            body: NewDecisionScreen(isGlobalAdmin: false),
+          ),
         ),
       ),
     );
