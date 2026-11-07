@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: false
+      format_client:
+        description: 'One-off: write canonical Dart formatting back to this trusted branch'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -87,6 +92,30 @@ jobs:
       - name: Run Flutter tests
         working-directory: app
         run: flutter test
+
+  format-client:
+    name: One-off canonical Dart formatter
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.format_client == true
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Apply the SDK's canonical Dart format
+        working-directory: app
+        run: dart format lib test integration_test
+      - name: Commit only formatter output
+        run: |
+          git add app/lib app/test app/integration_test
+          git diff --cached --quiet || git commit -m "style: format Flutter client"
+          git push
 
   android-debug-build:
     name: Android debug build
