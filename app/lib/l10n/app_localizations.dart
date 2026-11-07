@@ -10,6 +10,8 @@ class AppLocalizations {
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<MaterialLocalizations>
+  yorubaMaterialFallbackDelegate = _YorubaMaterialLocalizationsDelegate();
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('yo'),
@@ -212,6 +214,25 @@ class _AppLocalizationsDelegate
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+/// Flutter does not provide a Yoruba Material catalog. The client still
+/// supplies its complete Yoruba catalog while stock Material controls use the
+/// English fallback instead of making the locale unavailable.
+class _YorubaMaterialLocalizationsDelegate
+    extends LocalizationsDelegate<MaterialLocalizations> {
+  const _YorubaMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'yo';
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) async {
+    return const DefaultMaterialLocalizations();
+  }
+
+  @override
+  bool shouldReload(_YorubaMaterialLocalizationsDelegate old) => false;
 }
 
 extension AppLocalizationsContext on BuildContext {

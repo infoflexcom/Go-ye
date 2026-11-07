@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goye/l10n/app_localizations.dart';
 
@@ -11,6 +12,9 @@ void main() {
         locale: Locale('yo'),
         localizationsDelegates: <LocalizationsDelegate<dynamic>>[
           AppLocalizations.delegate,
+          AppLocalizations.yorubaMaterialFallbackDelegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: _LocalizedText(),
