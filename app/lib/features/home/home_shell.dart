@@ -68,7 +68,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           children: <Widget>[
             const GoYeLogo(size: 34),
             const SizedBox(width: 10),
-            Text(context.l10n.appName),
+            Expanded(
+              child: Text(
+                context.l10n.appName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         actions: <Widget>[
