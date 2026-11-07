@@ -86,7 +86,15 @@ jobs:
         run: flutter analyze
       - name: Run Flutter tests
         working-directory: app
-        run: flutter test
+        run: |
+          set +e
+          flutter test -r expanded > flutter-test.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            tail -n 80 flutter-test.txt | sed 's/^/::error::/'
+          fi
+          cat flutter-test.txt
+          exit $status
 
   android-debug-build:
     name: Android debug build
