@@ -50,17 +50,7 @@ jobs:
       - name: Prepare local-only Compose environment
         run: cp .env.example .env
       - name: Start API and PostgreSQL
-        run: |
-          set +e
-          docker compose up --build --wait
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            diagnostic="$(
-              docker compose logs --no-color api | tail -n 60 | sed -e 's/%/%25/g' -e 's/\r//g' -e ':a;N;$!ba;s/\n/%0A/g'
-            )"
-            echo "::error title=Compose API startup failed::$diagnostic"
-          fi
-          exit "$status"
+        run: docker compose up --build --wait
       - name: Verify hello API response
         run: |
           curl --fail --show-error http://localhost:3000/api/v1/hello
@@ -157,16 +147,7 @@ jobs:
           api-level: 29
           arch: x86_64
           working-directory: app
-          script: flutter test integration_test/otp_client_flow_test.dart -r expanded > flutter-integration-test.txt 2>&1
-      - name: Surface Android integration diagnostics
-        if: failure()
-        working-directory: app
-        run: |
-          diagnostic="$(
-            tail -n 80 flutter-integration-test.txt | sed -e 's/%/%25/g' -e 's/\r//g' -e ':a;N;$!ba;s/\n/%0A/g'
-          )"
-          echo "::error title=Android integration test failure::$diagnostic"
-          exit 1
+          script: flutter test integration_test/otp_client_flow_test.dart
 
   windows-client-integration:
     name: Windows client integration route
