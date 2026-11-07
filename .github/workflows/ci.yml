@@ -80,7 +80,17 @@ jobs:
         run: flutter pub get
       - name: Check Dart formatting
         working-directory: app
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: |
+          dart format --output=write lib test
+          changed="$(git diff --name-only -- lib test)"
+          if [ -n "$changed" ]; then
+            while IFS= read -r file; do
+              echo "::error file=$file::Dart format would change this file."
+            done <<EOF
+          $changed
+          EOF
+            exit 1
+          fi
       - name: Analyse Dart
         working-directory: app
         run: flutter analyze
