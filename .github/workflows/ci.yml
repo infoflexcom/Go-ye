@@ -157,17 +157,16 @@ jobs:
           api-level: 29
           arch: x86_64
           working-directory: app
-          script: |
-            set +e
-            flutter test integration_test/otp_client_flow_test.dart -r expanded > flutter-integration-test.txt 2>&1
-            status=$?
-            if [ "$status" -ne 0 ]; then
-              diagnostic="$(
-                tail -n 80 flutter-integration-test.txt | sed -e 's/%/%25/g' -e 's/\r//g' -e ':a;N;$!ba;s/\n/%0A/g'
-              )"
-              echo "::error title=Android integration test failure::$diagnostic"
-            fi
-            exit "$status"
+          script: flutter test integration_test/otp_client_flow_test.dart -r expanded > flutter-integration-test.txt 2>&1
+      - name: Surface Android integration diagnostics
+        if: failure()
+        working-directory: app
+        run: |
+          diagnostic="$(
+            tail -n 80 flutter-integration-test.txt | sed -e 's/%/%25/g' -e 's/\r//g' -e ':a;N;$!ba;s/\n/%0A/g'
+          )"
+          echo "::error title=Android integration test failure::$diagnostic"
+          exit 1
 
   windows-client-integration:
     name: Windows client integration route
