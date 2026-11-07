@@ -63,7 +63,9 @@ void main() {
           sessionStoreProvider.overrideWithValue(store),
           apiClientProvider.overrideWithValue(client),
         ],
-        child: const MaterialApp(home: HierarchyBrowserScreen()),
+        child: const MaterialApp(
+          home: Scaffold(body: HierarchyBrowserScreen()),
+        ),
       ),
     );
     await tester.pumpAndSettle();
