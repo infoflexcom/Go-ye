@@ -48,7 +48,11 @@ class UnassignedPoolScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAssignment(BuildContext context, WidgetRef ref, UnassignedConvert convert) async {
+  Future<void> _showAssignment(
+    BuildContext context,
+    WidgetRef ref,
+    UnassignedConvert convert,
+  ) async {
     final parish = await showDialog<OrgUnit>(
       context: context,
       builder: (_) => const _ParishPickerDialog(),
@@ -57,20 +61,25 @@ class UnassignedPoolScreen extends ConsumerWidget {
       return;
     }
     try {
-      await ref.read(convertsRepositoryProvider).assignToParish(
-            convertId: convert.id,
-            parishId: parish.id,
-          );
+      await ref
+          .read(convertsRepositoryProvider)
+          .assignToParish(convertId: convert.id, parishId: parish.id);
       ref.invalidate(unassignedConvertsProvider);
       ref.invalidate(convertsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${convert.fullName} ${context.l10n.text('assignedTo')} ${parish.name}')),
+          SnackBar(
+            content: Text(
+              '${convert.fullName} ${context.l10n.text('assignedTo')} ${parish.name}',
+            ),
+          ),
         );
       }
     } on ApiException catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     }
   }
@@ -88,9 +97,12 @@ class _ParishPickerDialog extends ConsumerWidget {
         width: 420,
         child: units.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (Object error, StackTrace stackTrace) => Text(context.l10n.text('unitLoadError')),
+          error: (Object error, StackTrace stackTrace) =>
+              Text(context.l10n.text('unitLoadError')),
           data: (List<OrgUnit> values) {
-            final parishes = values.where((OrgUnit unit) => unit.type == 'PARISH' && unit.isActive).toList();
+            final parishes = values
+                .where((OrgUnit unit) => unit.type == 'PARISH' && unit.isActive)
+                .toList();
             if (parishes.isEmpty) {
               return Text(context.l10n.text('noParishAvailable'));
             }
@@ -110,7 +122,10 @@ class _ParishPickerDialog extends ConsumerWidget {
         ),
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.l10n.close)),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.l10n.close),
+        ),
       ],
     );
   }

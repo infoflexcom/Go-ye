@@ -43,9 +43,9 @@ class AuthState {
 
 class AuthController extends StateNotifier<AuthState> {
   AuthController({required ApiClient api, required SessionStore sessionStore})
-      : _api = api,
-        _sessionStore = sessionStore,
-        super(const AuthState.restoring()) {
+    : _api = api,
+      _sessionStore = sessionStore,
+      super(const AuthState.restoring()) {
     unawaited(_restore());
   }
 
@@ -85,7 +85,8 @@ class AuthController extends StateNotifier<AuthState> {
     } on Object {
       state = const AuthState(
         status: AuthStatus.signedOut,
-        message: 'Unable to reach Go-Ye. Check the server connection and try again.',
+        message:
+            'Unable to reach Go-Ye. Check the server connection and try again.',
       );
     }
   }
@@ -118,7 +119,11 @@ class AuthController extends StateNotifier<AuthState> {
       await _sessionStore.writeSession(session);
       state = AuthState(status: AuthStatus.signedIn, session: session);
     } on ApiException catch (error) {
-      state = AuthState(status: AuthStatus.awaitingCode, identity: identity, message: error.message);
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        identity: identity,
+        message: error.message,
+      );
     } on Object {
       state = AuthState(
         status: AuthStatus.awaitingCode,
@@ -160,9 +165,11 @@ class AuthController extends StateNotifier<AuthState> {
   }
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((Ref ref) {
-  return AuthController(
-    api: ref.watch(apiClientProvider),
-    sessionStore: ref.watch(sessionStoreProvider),
-  );
-});
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (Ref ref) {
+    return AuthController(
+      api: ref.watch(apiClientProvider),
+      sessionStore: ref.watch(sessionStoreProvider),
+    );
+  },
+);

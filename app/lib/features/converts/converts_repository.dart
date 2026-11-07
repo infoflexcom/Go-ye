@@ -28,10 +28,10 @@ class ConvertsRepository {
   }
 
   Future<ConvertPage> list({int offset = 0, int limit = 50}) async {
-    final response = await _api.get('converts', query: <String, String>{
-      'offset': '$offset',
-      'limit': '$limit',
-    });
+    final response = await _api.get(
+      'converts',
+      query: <String, String>{'offset': '$offset', 'limit': '$limit'},
+    );
     return ConvertPage.fromJson(response);
   }
 
@@ -44,9 +44,14 @@ class ConvertsRepository {
     return response.map(UnassignedConvert.fromJson).toList(growable: false);
   }
 
-  Future<ConvertRecord> assignToParish({required String convertId, required String parishId}) async {
+  Future<ConvertRecord> assignToParish({
+    required String convertId,
+    required String parishId,
+  }) async {
     return ConvertRecord.fromJson(
-      await _api.post('converts/$convertId/assign-parish', <String, Object?>{'parishId': parishId}),
+      await _api.post('converts/$convertId/assign-parish', <String, Object?>{
+        'parishId': parishId,
+      }),
     );
   }
 }

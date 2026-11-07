@@ -12,7 +12,9 @@ class AdminReportsRepository {
   }
 
   Future<List<SummaryTotal>> listRegions(String countryId) async {
-    final response = await _api.getList('admin/reports/countries/$countryId/regions');
+    final response = await _api.getList(
+      'admin/reports/countries/$countryId/regions',
+    );
     return response.map(SummaryTotal.fromJson).toList(growable: false);
   }
 }

@@ -12,7 +12,14 @@ import '../converts/converts_list_screen.dart';
 import '../converts/new_decision_screen.dart';
 import '../converts/unassigned_pool_screen.dart';
 
-enum _WorkspaceDestination { dashboard, newDecision, converts, unassigned, directory, countries }
+enum _WorkspaceDestination {
+  dashboard,
+  newDecision,
+  converts,
+  unassigned,
+  directory,
+  countries,
+}
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({required this.session, super.key});
@@ -30,18 +37,25 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final destinations = <_WorkspaceDestination>[
       _WorkspaceDestination.dashboard,
-      if (_canRegisterConverts(widget.session)) _WorkspaceDestination.newDecision,
+      if (_canRegisterConverts(widget.session))
+        _WorkspaceDestination.newDecision,
       if (_canRegisterConverts(widget.session)) _WorkspaceDestination.converts,
-      if (_canUseUnassignedPool(widget.session)) _WorkspaceDestination.unassigned,
+      if (_canUseUnassignedPool(widget.session))
+        _WorkspaceDestination.unassigned,
       _WorkspaceDestination.directory,
       if (widget.session.isGlobalAdmin) _WorkspaceDestination.countries,
     ];
-    final selected = destinations[_selectedIndex.clamp(0, destinations.length - 1).toInt()];
+    final selected =
+        destinations[_selectedIndex.clamp(0, destinations.length - 1).toInt()];
 
     final desktopLayout = MediaQuery.sizeOf(context).width >= 800;
     final content = switch (selected) {
-      _WorkspaceDestination.dashboard => _DashboardWelcome(session: widget.session),
-      _WorkspaceDestination.newDecision => NewDecisionScreen(isGlobalAdmin: widget.session.isGlobalAdmin),
+      _WorkspaceDestination.dashboard => _DashboardWelcome(
+        session: widget.session,
+      ),
+      _WorkspaceDestination.newDecision => NewDecisionScreen(
+        isGlobalAdmin: widget.session.isGlobalAdmin,
+      ),
       _WorkspaceDestination.converts => const ConvertsListScreen(),
       _WorkspaceDestination.unassigned => const UnassignedPoolScreen(),
       _WorkspaceDestination.directory => const HierarchyBrowserScreen(),
@@ -82,7 +96,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ),
           IconButton(
             tooltip: context.l10n.signOut,
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
             icon: const Icon(Icons.logout),
           ),
         ],
@@ -97,9 +112,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                       ? null
                       : NavigationRailLabelType.all,
                   destinations: destinations
-                      .map((destination) => _navigationRailDestination(context, destination))
+                      .map(
+                        (destination) =>
+                            _navigationRailDestination(context, destination),
+                      )
                       .toList(growable: false),
-                  onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
+                  onDestinationSelected: (int index) =>
+                      setState(() => _selectedIndex = index),
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(child: content),
@@ -110,38 +129,47 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ? null
           : NavigationBar(
               selectedIndex: _selectedIndex,
-              destinations: destinations.map((destination) => _navigationDestination(context, destination)).toList(),
-              onDestinationSelected: (int index) => setState(() => _selectedIndex = index),
+              destinations: destinations
+                  .map(
+                    (destination) =>
+                        _navigationDestination(context, destination),
+                  )
+                  .toList(),
+              onDestinationSelected: (int index) =>
+                  setState(() => _selectedIndex = index),
             ),
     );
   }
 
-  NavigationDestination _navigationDestination(BuildContext context, _WorkspaceDestination destination) {
+  NavigationDestination _navigationDestination(
+    BuildContext context,
+    _WorkspaceDestination destination,
+  ) {
     return switch (destination) {
       _WorkspaceDestination.dashboard => NavigationDestination(
-          icon: const Icon(Icons.dashboard_outlined),
-          label: context.l10n.dashboard,
-        ),
+        icon: const Icon(Icons.dashboard_outlined),
+        label: context.l10n.dashboard,
+      ),
       _WorkspaceDestination.newDecision => NavigationDestination(
-          icon: const Icon(Icons.person_add_alt_1_outlined),
-          label: context.l10n.newDecision,
-        ),
+        icon: const Icon(Icons.person_add_alt_1_outlined),
+        label: context.l10n.newDecision,
+      ),
       _WorkspaceDestination.converts => NavigationDestination(
-          icon: const Icon(Icons.people_outline),
-          label: context.l10n.converts,
-        ),
+        icon: const Icon(Icons.people_outline),
+        label: context.l10n.converts,
+      ),
       _WorkspaceDestination.unassigned => NavigationDestination(
-          icon: const Icon(Icons.assignment_late_outlined),
-          label: context.l10n.unassigned,
-        ),
+        icon: const Icon(Icons.assignment_late_outlined),
+        label: context.l10n.unassigned,
+      ),
       _WorkspaceDestination.directory => NavigationDestination(
-          icon: const Icon(Icons.account_tree_outlined),
-          label: context.l10n.text('hierarchy'),
-        ),
+        icon: const Icon(Icons.account_tree_outlined),
+        label: context.l10n.text('hierarchy'),
+      ),
       _WorkspaceDestination.countries => NavigationDestination(
-          icon: const Icon(Icons.public_outlined),
-          label: context.l10n.countries,
-        ),
+        icon: const Icon(Icons.public_outlined),
+        label: context.l10n.countries,
+      ),
     };
   }
 
@@ -150,7 +178,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     _WorkspaceDestination destination,
   ) {
     final navigation = _navigationDestination(context, destination);
-    return NavigationRailDestination(icon: navigation.icon, label: Text(navigation.label));
+    return NavigationRailDestination(
+      icon: navigation.icon,
+      label: Text(navigation.label),
+    );
   }
 
   bool _canRegisterConverts(Session session) {
@@ -199,15 +230,25 @@ class _DashboardWelcome extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          session.roles.isEmpty ? context.l10n.noActiveRole : session.roles.join(' · '),
+          session.roles.isEmpty
+              ? context.l10n.noActiveRole
+              : session.roles.join(' · '),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
         count.when(
-          loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
-          error: (Object error, StackTrace stackTrace) => _CountUnavailable(message: context.l10n.text('countUnavailable')),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (Object error, StackTrace stackTrace) =>
+              _CountUnavailable(message: context.l10n.text('countUnavailable')),
           data: (ScopedCount? value) => value == null
-              ? _CountUnavailable(message: context.l10n.text('countUnavailable'))
+              ? _CountUnavailable(
+                  message: context.l10n.text('countUnavailable'),
+                )
               : _CountCard(count: value),
         ),
       ],
@@ -228,9 +269,15 @@ class _CountCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(count.scopeName ?? context.l10n.text('yourScope'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              count.scopeName ?? context.l10n.text('yourScope'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
-            Text('${count.total}', style: Theme.of(context).textTheme.displaySmall),
+            Text(
+              '${count.total}',
+              style: Theme.of(context).textTheme.displaySmall,
+            ),
             Text(context.l10n.text('activeConverts')),
             if (count.byStage.isNotEmpty) ...<Widget>[
               const Divider(height: 32),
@@ -240,7 +287,9 @@ class _CountCard extends StatelessWidget {
                 children: count.byStage.entries
                     .map(
                       (MapEntry<String, int> entry) => Chip(
-                        label: Text('${entry.key.replaceAll('_', ' ')} · ${entry.value}'),
+                        label: Text(
+                          '${entry.key.replaceAll('_', ' ')} · ${entry.value}',
+                        ),
                       ),
                     )
                     .toList(growable: false),
@@ -280,10 +329,17 @@ class _LanguageButton extends StatelessWidget {
     return PopupMenuButton<Locale>(
       tooltip: context.l10n.language,
       initialValue: locale,
-      onSelected: (Locale value) => ref.read(localeProvider.notifier).state = value,
+      onSelected: (Locale value) =>
+          ref.read(localeProvider.notifier).state = value,
       itemBuilder: (BuildContext context) => <PopupMenuEntry<Locale>>[
-        PopupMenuItem<Locale>(value: const Locale('en'), child: Text(context.l10n.english)),
-        PopupMenuItem<Locale>(value: const Locale('yo'), child: Text(context.l10n.yoruba)),
+        PopupMenuItem<Locale>(
+          value: const Locale('en'),
+          child: Text(context.l10n.english),
+        ),
+        PopupMenuItem<Locale>(
+          value: const Locale('yo'),
+          child: Text(context.l10n.yoruba),
+        ),
       ],
       child: Padding(
         padding: const EdgeInsets.all(12),

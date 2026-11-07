@@ -14,7 +14,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('uses a data table for the wide Windows layout', (WidgetTester tester) async {
+  testWidgets('uses a data table for the wide Windows layout', (
+    WidgetTester tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final store = MemorySessionStore()

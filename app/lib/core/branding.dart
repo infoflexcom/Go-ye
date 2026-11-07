@@ -25,7 +25,8 @@ class GoYeLogo extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Icon(Icons.volunteer_activism, size: size),
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.volunteer_activism, size: size),
         ),
       ),
     );
@@ -43,12 +44,12 @@ class AboutGoYeDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            context.l10n.aboutBody,
-            textAlign: TextAlign.center,
-          ),
+          Text(context.l10n.aboutBody, textAlign: TextAlign.center),
           const SizedBox(height: 24),
-          Text(context.l10n.builtBy, style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            context.l10n.builtBy,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 8),
           Image.asset(
             GoYeBrand.infoflexLogoAsset,
@@ -59,7 +60,10 @@ class AboutGoYeDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.l10n.close)),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.l10n.close),
+        ),
       ],
     );
   }

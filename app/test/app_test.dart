@@ -9,7 +9,9 @@ import 'package:goye/main.dart';
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('shows the OTP login screen before a secure session exists', (WidgetTester tester) async {
+  testWidgets('shows the OTP login screen before a secure session exists', (
+    WidgetTester tester,
+  ) async {
     final store = MemorySessionStore();
     final client = ApiClient(
       baseUrl: 'https://goye.test/api/v1/',
@@ -33,7 +35,9 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
   });
 
-  testWidgets('uses INFOFLEX only in the About dialog', (WidgetTester tester) async {
+  testWidgets('uses INFOFLEX only in the About dialog', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: AboutGoYeDialog()));
 
     expect(find.text('Built by'), findsOneWidget);

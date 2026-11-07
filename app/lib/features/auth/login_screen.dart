@@ -27,7 +27,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
-    final awaitingCode = state.status == AuthStatus.awaitingCode || state.status == AuthStatus.submitting && state.identity != null;
+    final awaitingCode =
+        state.status == AuthStatus.awaitingCode ||
+        state.status == AuthStatus.submitting && state.identity != null;
     final loading = state.status == AuthStatus.submitting;
 
     return Scaffold(
@@ -69,8 +71,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           autofocus: true,
                           enabled: !loading,
                           keyboardType: TextInputType.emailAddress,
-                          autofillHints: const <String>[AutofillHints.email, AutofillHints.telephoneNumber],
-                          decoration: const InputDecoration(
+                          autofillHints: const <String>[
+                            AutofillHints.email,
+                            AutofillHints.telephoneNumber,
+                          ],
+                          decoration: InputDecoration(
                             labelText: context.l10n.phoneOrEmail,
                             border: OutlineInputBorder(),
                           ),
@@ -80,7 +85,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         FilledButton(
                           onPressed: loading ? null : _requestCode,
                           child: loading
-                              ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(),
+                                )
                               : Text(context.l10n.sendCode),
                         ),
                       ] else ...<Widget>[
@@ -96,8 +104,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           enabled: !loading,
                           keyboardType: TextInputType.number,
                           maxLength: 6,
-                          autofillHints: const <String>[AutofillHints.oneTimeCode],
-                          decoration: const InputDecoration(
+                          autofillHints: const <String>[
+                            AutofillHints.oneTimeCode,
+                          ],
+                          decoration: InputDecoration(
                             labelText: context.l10n.sixDigitCode,
                             border: OutlineInputBorder(),
                           ),
@@ -107,7 +117,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         FilledButton(
                           onPressed: loading ? null : _verifyCode,
                           child: loading
-                              ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(),
+                                )
                               : Text(context.l10n.signInSecurely),
                         ),
                         TextButton(
@@ -122,7 +135,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Text(
                             state.message!,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Theme.of(context).colorScheme.error),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                           ),
                         ),
                       ],
@@ -162,10 +177,17 @@ class _LanguageButton extends StatelessWidget {
     return PopupMenuButton<Locale>(
       tooltip: context.l10n.language,
       initialValue: locale,
-      onSelected: (Locale value) => ref.read(localeProvider.notifier).state = value,
+      onSelected: (Locale value) =>
+          ref.read(localeProvider.notifier).state = value,
       itemBuilder: (BuildContext context) => <PopupMenuEntry<Locale>>[
-        PopupMenuItem<Locale>(value: const Locale('en'), child: Text(context.l10n.english)),
-        PopupMenuItem<Locale>(value: const Locale('yo'), child: Text(context.l10n.yoruba)),
+        PopupMenuItem<Locale>(
+          value: const Locale('en'),
+          child: Text(context.l10n.english),
+        ),
+        PopupMenuItem<Locale>(
+          value: const Locale('yo'),
+          child: Text(context.l10n.yoruba),
+        ),
       ],
       child: Padding(
         padding: const EdgeInsets.all(12),

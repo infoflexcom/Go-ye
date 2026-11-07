@@ -12,7 +12,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('renders only hierarchy units returned by the scoped API', (WidgetTester tester) async {
+  testWidgets('renders only hierarchy units returned by the scoped API', (
+    WidgetTester tester,
+  ) async {
     final store = MemorySessionStore()
       ..session = const Session(
         accessToken: 'test-access',

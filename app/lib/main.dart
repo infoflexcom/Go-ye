@@ -45,7 +45,9 @@ class GoYeApp extends ConsumerWidget {
       darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
       home: switch (auth.status) {
         AuthStatus.restoring => const _RestoringSessionScreen(),
-        AuthStatus.signedIn when auth.session != null => HomeShell(session: auth.session!),
+        AuthStatus.signedIn when auth.session != null => HomeShell(
+          session: auth.session!,
+        ),
         _ => const LoginScreen(),
       },
     );
@@ -61,7 +63,11 @@ class _RestoringSessionScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: <Widget>[GoYeLogo(size: 96), SizedBox(height: 24), CircularProgressIndicator()],
+          children: <Widget>[
+            GoYeLogo(size: 96),
+            SizedBox(height: 24),
+            CircularProgressIndicator(),
+          ],
         ),
       ),
     );

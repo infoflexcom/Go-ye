@@ -41,13 +41,21 @@ class Session {
     return Session(
       accessToken: _requiredString(response, 'accessToken'),
       refreshToken: _requiredString(response, 'refreshToken'),
-      accessTokenExpiresInSeconds: _requiredInt(response, 'accessTokenExpiresInSeconds'),
-      refreshTokenExpiresInSeconds: _requiredInt(response, 'refreshTokenExpiresInSeconds'),
+      accessTokenExpiresInSeconds: _requiredInt(
+        response,
+        'accessTokenExpiresInSeconds',
+      ),
+      refreshTokenExpiresInSeconds: _requiredInt(
+        response,
+        'refreshTokenExpiresInSeconds',
+      ),
       userId: _requiredString(claims, 'sub'),
       roles: rawRoles is List
           ? rawRoles.whereType<String>().toSet()
           : const <String>{},
-      homePath: claims['homePath'] is String ? claims['homePath'] as String : null,
+      homePath: claims['homePath'] is String
+          ? claims['homePath'] as String
+          : null,
     );
   }
 
@@ -56,11 +64,21 @@ class Session {
     return Session(
       accessToken: _requiredString(value, 'accessToken'),
       refreshToken: _requiredString(value, 'refreshToken'),
-      accessTokenExpiresInSeconds: _requiredInt(value, 'accessTokenExpiresInSeconds'),
-      refreshTokenExpiresInSeconds: _requiredInt(value, 'refreshTokenExpiresInSeconds'),
+      accessTokenExpiresInSeconds: _requiredInt(
+        value,
+        'accessTokenExpiresInSeconds',
+      ),
+      refreshTokenExpiresInSeconds: _requiredInt(
+        value,
+        'refreshTokenExpiresInSeconds',
+      ),
       userId: _requiredString(value, 'userId'),
-      roles: roles is List ? roles.whereType<String>().toSet() : const <String>{},
-      homePath: value['homePath'] is String ? value['homePath'] as String : null,
+      roles: roles is List
+          ? roles.whereType<String>().toSet()
+          : const <String>{},
+      homePath: value['homePath'] is String
+          ? value['homePath'] as String
+          : null,
     );
   }
 }
@@ -90,7 +108,9 @@ class OrgUnit {
       type: _requiredString(value, 'type'),
       name: _requiredString(value, 'name'),
       code: _requiredString(value, 'code'),
-      parentId: value['parentId'] is String ? value['parentId'] as String : null,
+      parentId: value['parentId'] is String
+          ? value['parentId'] as String
+          : null,
       path: _requiredString(value, 'path'),
       isActive: value['isActive'] == true,
     );
@@ -112,11 +132,14 @@ List<Map<String, Object?>> objectListFromJson(String source) {
   if (decoded is! List) {
     throw const FormatException('The server returned an invalid list.');
   }
-  return decoded.whereType<Map>().map((Map<Object?, Object?> item) {
-    return item.map<String, Object?>((Object? key, Object? value) {
-      return MapEntry<String, Object?>(key.toString(), value);
-    });
-  }).toList(growable: false);
+  return decoded
+      .whereType<Map>()
+      .map((Map<Object?, Object?> item) {
+        return item.map<String, Object?>((Object? key, Object? value) {
+          return MapEntry<String, Object?>(key.toString(), value);
+        });
+      })
+      .toList(growable: false);
 }
 
 Map<String, Object?> _jwtClaims(String token) {
@@ -124,7 +147,9 @@ Map<String, Object?> _jwtClaims(String token) {
   if (segments.length != 3) {
     throw const FormatException('The server returned an invalid access token.');
   }
-  return objectFromJson(utf8.decode(base64Url.decode(base64Url.normalize(segments[1]))));
+  return objectFromJson(
+    utf8.decode(base64Url.decode(base64Url.normalize(segments[1]))),
+  );
 }
 
 String _requiredString(Map<String, Object?> value, String key) {
@@ -147,7 +172,12 @@ int _requiredInt(Map<String, Object?> value, String key) {
 }
 
 class SummaryTotal {
-  const SummaryTotal({required this.id, required this.code, required this.name, required this.total});
+  const SummaryTotal({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.total,
+  });
 
   final String id;
   final String code;
@@ -193,7 +223,9 @@ class ConvertRecord {
       phone: value['phone'] is String ? value['phone'] as String : null,
       address: value['address'] is String ? value['address'] as String : null,
       registeredAtUnitId: _requiredString(value, 'registeredAtUnitId'),
-      parishId: value['parishId'] is String ? value['parishId'] as String : null,
+      parishId: value['parishId'] is String
+          ? value['parishId'] as String
+          : null,
       stage: _requiredString(value, 'stage'),
       createdAt: _date(value['createdAt']),
     );
@@ -210,17 +242,21 @@ class ConvertPage {
     final rawItems = value['items'];
     final rawTotal = value['total'];
     if (rawItems is! List) {
-      throw const FormatException('The server response did not contain convert items.');
+      throw const FormatException(
+        'The server response did not contain convert items.',
+      );
     }
     return ConvertPage(
       total: rawTotal is num ? rawTotal.toInt() : 0,
       items: rawItems
           .whereType<Map>()
-          .map((Map<Object?, Object?> item) => ConvertRecord.fromJson(
-                item.map<String, Object?>((Object? key, Object? itemValue) {
-                  return MapEntry<String, Object?>(key.toString(), itemValue);
-                }),
-              ))
+          .map(
+            (Map<Object?, Object?> item) => ConvertRecord.fromJson(
+              item.map<String, Object?>((Object? key, Object? itemValue) {
+                return MapEntry<String, Object?>(key.toString(), itemValue);
+              }),
+            ),
+          )
           .toList(growable: false),
     );
   }
@@ -263,13 +299,20 @@ DateTime? _date(Object? rawValue) {
 }
 
 class ScopedCount {
-  const ScopedCount({required this.total, required this.byStage, this.scopeName});
+  const ScopedCount({
+    required this.total,
+    required this.byStage,
+    this.scopeName,
+  });
 
   final int total;
   final Map<String, int> byStage;
   final String? scopeName;
 
-  factory ScopedCount.fromJson(Map<String, Object?> value, {String? scopeName}) {
+  factory ScopedCount.fromJson(
+    Map<String, Object?> value, {
+    String? scopeName,
+  }) {
     final rawStages = value['byStage'];
     final stages = <String, int>{};
     if (rawStages is Map) {

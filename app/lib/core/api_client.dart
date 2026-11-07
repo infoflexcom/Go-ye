@@ -23,9 +23,9 @@ class ApiClient {
     required String baseUrl,
     required SessionStore sessionStore,
     http.Client? httpClient,
-  })  : _baseUri = _normaliseBaseUri(baseUrl),
-        _sessionStore = sessionStore,
-        _http = httpClient ?? http.Client();
+  }) : _baseUri = _normaliseBaseUri(baseUrl),
+       _sessionStore = sessionStore,
+       _http = httpClient ?? http.Client();
 
   final Uri _baseUri;
   final SessionStore _sessionStore;
@@ -35,10 +35,23 @@ class ApiClient {
     return _request('GET', path, query: query);
   }
 
-  Future<List<Map<String, Object?>>> getList(String path, {Map<String, String>? query}) async {
-    var response = await _rawRequest('GET', path, query: query, authenticated: true);
+  Future<List<Map<String, Object?>>> getList(
+    String path, {
+    Map<String, String>? query,
+  }) async {
+    var response = await _rawRequest(
+      'GET',
+      path,
+      query: query,
+      authenticated: true,
+    );
     if (response.statusCode == 401 && await _refreshSession()) {
-      response = await _rawRequest('GET', path, query: query, authenticated: true);
+      response = await _rawRequest(
+        'GET',
+        path,
+        query: query,
+        authenticated: true,
+      );
     }
     return _decodeListResponse(response);
   }
@@ -51,8 +64,16 @@ class ApiClient {
     return _request('PATCH', path, body: body);
   }
 
-  Future<Map<String, Object?>> postPublic(String path, Map<String, Object?> body) async {
-    final response = await _rawRequest('POST', path, body: body, authenticated: false);
+  Future<Map<String, Object?>> postPublic(
+    String path,
+    Map<String, Object?> body,
+  ) async {
+    final response = await _rawRequest(
+      'POST',
+      path,
+      body: body,
+      authenticated: false,
+    );
     return _decodeObjectResponse(response);
   }
 
@@ -62,9 +83,21 @@ class ApiClient {
     Map<String, Object?>? body,
     Map<String, String>? query,
   }) async {
-    var response = await _rawRequest(method, path, body: body, query: query, authenticated: true);
+    var response = await _rawRequest(
+      method,
+      path,
+      body: body,
+      query: query,
+      authenticated: true,
+    );
     if (response.statusCode == 401 && await _refreshSession()) {
-      response = await _rawRequest(method, path, body: body, query: query, authenticated: true);
+      response = await _rawRequest(
+        method,
+        path,
+        body: body,
+        query: query,
+        authenticated: true,
+      );
     }
     return _decodeObjectResponse(response);
   }
@@ -83,7 +116,10 @@ class ApiClient {
     if (authenticated) {
       final session = await _sessionStore.readSession();
       if (session == null) {
-        throw const ApiException('Your session has ended. Please sign in again.', statusCode: 401);
+        throw const ApiException(
+          'Your session has ended. Please sign in again.',
+          statusCode: 401,
+        );
       }
       headers['authorization'] = 'Bearer ${session.accessToken}';
     }
@@ -117,7 +153,9 @@ class ApiClient {
       return false;
     }
     try {
-      await _sessionStore.writeSession(Session.fromApi(objectFromJson(response.body)));
+      await _sessionStore.writeSession(
+        Session.fromApi(objectFromJson(response.body)),
+      );
       return true;
     } on FormatException {
       await _sessionStore.clearSession();
@@ -164,7 +202,11 @@ class ApiClient {
   static Uri _normaliseBaseUri(String value) {
     final uri = Uri.parse(value.trim());
     if (!uri.hasScheme || !uri.hasAuthority) {
-      throw ArgumentError.value(value, 'baseUrl', 'API_BASE_URL must be an absolute URL.');
+      throw ArgumentError.value(
+        value,
+        'baseUrl',
+        'API_BASE_URL must be an absolute URL.',
+      );
     }
     return uri.path.endsWith('/') ? uri : uri.replace(path: '${uri.path}/');
   }

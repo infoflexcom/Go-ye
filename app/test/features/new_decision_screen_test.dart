@@ -14,7 +14,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('does not save a decision until affirmative consent is checked', (WidgetTester tester) async {
+  testWidgets('does not save a decision until affirmative consent is checked', (
+    WidgetTester tester,
+  ) async {
     Map<String, Object?>? submitted;
     final store = MemorySessionStore()
       ..session = const Session(

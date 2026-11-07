@@ -8,8 +8,12 @@ class AppLocalizations {
 
   final Locale locale;
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
-  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('yo')];
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('yo'),
+  ];
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
@@ -51,11 +55,13 @@ class AppLocalizations {
   String get enterCode => text('enterCode');
   String get networkError => text('networkError');
 
-  static const Map<String, Map<String, String>> _messages = <String, Map<String, String>>{
+  static const Map<String, Map<String, String>>
+  _messages = <String, Map<String, String>>{
     'en': <String, String>{
       'appName': 'Go-Ye',
       'welcome': 'Welcome to Go-Ye',
-      'signInPrompt': 'Sign in with your approved phone number or email address.',
+      'signInPrompt':
+          'Sign in with your approved phone number or email address.',
       'codePrompt': 'Enter the six-digit code sent to your approved contact.',
       'phoneOrEmail': 'Phone number or email',
       'sendCode': 'Send sign-in code',
@@ -74,7 +80,8 @@ class AppLocalizations {
       'workspaceReady': 'Role-aware workspace navigation is ready.',
       'about': 'About Go-Ye',
       'aboutGoYe': 'About Go-Ye',
-      'aboutBody': 'Go-Ye helps authorised RCCG workers register decisions and provide follow-up with care.',
+      'aboutBody':
+          'Go-Ye helps authorised RCCG workers register decisions and provide follow-up with care.',
       'builtBy': 'Built by',
       'close': 'Close',
       'toggleDarkMode': 'Toggle dark mode',
@@ -83,8 +90,10 @@ class AppLocalizations {
       'yoruba': 'Yorùbá',
       'enterIdentity': 'Enter your approved phone number or email address.',
       'enterCode': 'Enter the six-digit code.',
-      'networkError': 'Unable to reach Go-Ye. Check the server connection and try again.',
-      'decisionFormHelp': 'Record the decision only after the person has given clear consent.',
+      'networkError':
+          'Unable to reach Go-Ye. Check the server connection and try again.',
+      'decisionFormHelp':
+          'Record the decision only after the person has given clear consent.',
       'fullName': 'Full name',
       'required': 'This field is required.',
       'phoneOptional': 'Phone number (optional)',
@@ -93,7 +102,8 @@ class AppLocalizations {
       'registrationUnit': 'Registration unit',
       'selectRegistrationUnit': 'Select a registration unit.',
       'consentMethod': 'Consent method',
-      'consentStatement': 'The person has affirmatively agreed to this information being recorded for follow-up.',
+      'consentStatement':
+          'The person has affirmatively agreed to this information being recorded for follow-up.',
       'consentRequired': 'Consent is required before saving.',
       'saveDecision': 'Save decision',
       'decisionSaved': 'was saved.',
@@ -138,7 +148,8 @@ class AppLocalizations {
       'workspaceReady': 'Ìtọ́sọ́nà ibi iṣẹ́ gẹ́gẹ́ bí ipa ti ṣetán.',
       'about': 'Nípa Go-Ye',
       'aboutGoYe': 'Nípa Go-Ye',
-      'aboutBody': 'Go-Ye ń ran àwọn òṣìṣẹ́ RCCG tí a fọwọ́sí lọ́wọ́ láti forúkọsílẹ̀ àwọn ìpinnu àti láti tọ́ wọn lẹ́yìn pẹ̀lú ìfẹ́.',
+      'aboutBody':
+          'Go-Ye ń ran àwọn òṣìṣẹ́ RCCG tí a fọwọ́sí lọ́wọ́ láti forúkọsílẹ̀ àwọn ìpinnu àti láti tọ́ wọn lẹ́yìn pẹ̀lú ìfẹ́.',
       'builtBy': 'Ẹni tí ó kọ́ ọ',
       'close': 'Pàdé',
       'toggleDarkMode': 'Yí ìmólẹ̀ dúdú padà',
@@ -147,8 +158,10 @@ class AppLocalizations {
       'yoruba': 'Yorùbá',
       'enterIdentity': 'Tẹ nọ́ńbà fóònù tàbí íméèlì tí a fọwọ́sí.',
       'enterCode': 'Tẹ kóòdù oní-nọ́ńbà mẹ́fà.',
-      'networkError': 'A kò lè dé Go-Ye. Ṣàyẹ̀wò ìsopọ̀ olupin kí o tún gbìyànjú.',
-      'decisionFormHelp': 'Forúkọsílẹ̀ ìpinnu náà lẹ́yìn tí ẹni náà bá ti fọwọ́ sí i ní kedere.',
+      'networkError':
+          'A kò lè dé Go-Ye. Ṣàyẹ̀wò ìsopọ̀ olupin kí o tún gbìyànjú.',
+      'decisionFormHelp':
+          'Forúkọsílẹ̀ ìpinnu náà lẹ́yìn tí ẹni náà bá ti fọwọ́ sí i ní kedere.',
       'fullName': 'Orúkọ kíkún',
       'required': 'A nílò ibi yìí.',
       'phoneOptional': 'Nọ́ńbà fóònù (aṣàyàn)',
@@ -157,7 +170,8 @@ class AppLocalizations {
       'registrationUnit': 'Ẹ̀ka ìforúkọsílẹ̀',
       'selectRegistrationUnit': 'Yan ẹ̀ka ìforúkọsílẹ̀.',
       'consentMethod': 'Ọ̀nà ìfọwọ́sí',
-      'consentStatement': 'Ẹni náà ti fọwọ́ sí i pé a lè kọ ìwífún yìí sílẹ̀ fún ìtọ́lẹ́yìn.',
+      'consentStatement':
+          'Ẹni náà ti fọwọ́ sí i pé a lè kọ ìwífún yìí sílẹ̀ fún ìtọ́lẹ́yìn.',
       'consentRequired': 'Ìfọwọ́sí yẹ kí ó wà kí a tó fipamọ́.',
       'saveDecision': 'Fi ìpinnu pamọ́',
       'decisionSaved': 'ti wa ní fífipamọ́.',
@@ -183,11 +197,13 @@ class AppLocalizations {
   };
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) => AppLocalizations.supportedLocales.contains(Locale(locale.languageCode));
+  bool isSupported(Locale locale) =>
+      AppLocalizations.supportedLocales.contains(Locale(locale.languageCode));
 
   @override
   Future<AppLocalizations> load(Locale locale) async {

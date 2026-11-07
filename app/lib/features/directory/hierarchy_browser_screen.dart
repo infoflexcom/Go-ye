@@ -30,8 +30,14 @@ class HierarchyBrowserScreen extends ConsumerWidget {
               title: Text(unit.name),
               subtitle: Text('${unit.type} · ${unit.code}'),
               trailing: unit.isActive
-                  ? const Icon(Icons.check_circle_outline, semanticLabel: 'Active')
-                  : const Icon(Icons.pause_circle_outline, semanticLabel: 'Inactive'),
+                  ? const Icon(
+                      Icons.check_circle_outline,
+                      semanticLabel: 'Active',
+                    )
+                  : const Icon(
+                      Icons.pause_circle_outline,
+                      semanticLabel: 'Inactive',
+                    ),
             ),
           );
         },
@@ -70,7 +76,11 @@ class _LoadError extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+            OutlinedButton.icon(
+              onPressed: retry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
           ],
         ),
       ),
