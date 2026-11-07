@@ -20,34 +20,36 @@ class CountrySelectorScreen extends ConsumerWidget {
           label: const Text('Retry country list'),
         ),
       ),
-      data: (List<SummaryTotal> values) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Text(
-            'Select a country',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          const Text('Country totals are scoped to the Global Admin role.'),
-          const SizedBox(height: 16),
-          for (final country in values)
-            Card(
-              child: RadioListTile<SummaryTotal>(
-                value: country,
-                groupValue: selected,
-                onChanged: (SummaryTotal? value) {
-                  ref.read(selectedCountryProvider.notifier).state = value;
-                },
-                title: Text(country.name),
-                subtitle: Text(country.code),
-                secondary: _TotalChip(total: country.total),
-              ),
+      data: (List<SummaryTotal> values) => RadioGroup<SummaryTotal>(
+        groupValue: selected,
+        onChanged: (SummaryTotal? value) {
+          ref.read(selectedCountryProvider.notifier).state = value;
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            Text(
+              'Select a country',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          if (selected != null) ...<Widget>[
+            const SizedBox(height: 8),
+            const Text('Country totals are scoped to the Global Admin role.'),
             const SizedBox(height: 16),
-            _RegionTotals(country: selected),
+            for (final country in values)
+              Card(
+                child: RadioListTile<SummaryTotal>(
+                  value: country,
+                  title: Text(country.name),
+                  subtitle: Text(country.code),
+                  secondary: _TotalChip(total: country.total),
+                ),
+              ),
+            if (selected != null) ...<Widget>[
+              const SizedBox(height: 16),
+              _RegionTotals(country: selected),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -87,7 +87,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
               error: (Object error, StackTrace stackTrace) =>
                   Text(context.l10n.text('unitLoadError')),
               data: (List<OrgUnit> values) => DropdownButtonFormField<String>(
-                value: _registrationUnitId,
+                initialValue: _registrationUnitId,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: context.l10n.text('registrationUnit'),
@@ -117,7 +117,7 @@ class _NewDecisionScreenState extends ConsumerState<NewDecisionScreen> {
           ],
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _consentMethod,
+            initialValue: _consentMethod,
             decoration: InputDecoration(
               labelText: context.l10n.text('consentMethod'),
               border: const OutlineInputBorder(),
