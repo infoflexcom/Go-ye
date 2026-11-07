@@ -91,7 +91,7 @@ jobs:
           flutter test -r expanded > flutter-test.txt 2>&1
           status=$?
           if [ "$status" -ne 0 ]; then
-            tail -n 80 flutter-test.txt | sed 's/^/::error::/'
+            grep -E -A 12 -B 4 '══╡|The following|Expected:|Actual:|TestFailure|Exception' flutter-test.txt | sed 's/^/::error::/' || true
           fi
           cat flutter-test.txt
           exit $status
