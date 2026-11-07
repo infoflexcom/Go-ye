@@ -83,7 +83,13 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test integration_test
       - name: Analyse Dart
         working-directory: app
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze --machine > analysis.txt
+          status=$?
+          awk -F '|' '$1 == "ERROR" { path = $4; sub(/^file:\/\/.*\/app\//, "app/", path); printf "::error file=%s,line=%s,col=%s::%s\\n", path, $5, $6, $8 }' analysis.txt
+          cat analysis.txt
+          exit $status
       - name: Run Flutter tests
         working-directory: app
         run: flutter test
