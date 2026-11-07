@@ -11,7 +11,7 @@ class AppLocalizations {
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
   static const LocalizationsDelegate<MaterialLocalizations>
-  yorubaMaterialFallbackDelegate = _YorubaMaterialLocalizationsDelegate();
+      yorubaMaterialFallbackDelegate = _YorubaMaterialLocalizationsDelegate();
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('yo'),
