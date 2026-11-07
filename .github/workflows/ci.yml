@@ -87,7 +87,7 @@ jobs:
           set +e
           flutter analyze --machine > analysis.txt
           status=$?
-          awk -F '|' '$1 == "ERROR" { path = $4; sub(/^file:\/\/.*\/app\//, "app/", path); printf "::error file=%s,line=%s,col=%s::%s\\n", path, $5, $6, $8 }' analysis.txt
+          sed 's/^/::error::/' analysis.txt
           cat analysis.txt
           exit $status
       - name: Run Flutter tests
