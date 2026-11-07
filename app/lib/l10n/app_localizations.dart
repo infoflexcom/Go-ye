@@ -80,8 +80,7 @@ class AppLocalizations {
       'workspaceReady': 'Role-aware workspace navigation is ready.',
       'about': 'About Go-Ye',
       'aboutGoYe': 'About Go-Ye',
-      'aboutBody':
-          'Go-Ye helps authorised RCCG workers register decisions and provide follow-up with care.',
+      'aboutBody': 'Go-Ye helps authorised RCCG workers register decisions and provide follow-up with care.',
       'builtBy': 'Built by',
       'close': 'Close',
       'toggleDarkMode': 'Toggle dark mode',
@@ -102,8 +101,7 @@ class AppLocalizations {
       'registrationUnit': 'Registration unit',
       'selectRegistrationUnit': 'Select a registration unit.',
       'consentMethod': 'Consent method',
-      'consentStatement':
-          'The person has affirmatively agreed to this information being recorded for follow-up.',
+      'consentStatement': 'The person has affirmatively agreed to this information being recorded for follow-up.',
       'consentRequired': 'Consent is required before saving.',
       'saveDecision': 'Save decision',
       'decisionSaved': 'was saved.',
@@ -148,8 +146,7 @@ class AppLocalizations {
       'workspaceReady': 'Ìtọ́sọ́nà ibi iṣẹ́ gẹ́gẹ́ bí ipa ti ṣetán.',
       'about': 'Nípa Go-Ye',
       'aboutGoYe': 'Nípa Go-Ye',
-      'aboutBody':
-          'Go-Ye ń ran àwọn òṣìṣẹ́ RCCG tí a fọwọ́sí lọ́wọ́ láti forúkọsílẹ̀ àwọn ìpinnu àti láti tọ́ wọn lẹ́yìn pẹ̀lú ìfẹ́.',
+      'aboutBody': 'Go-Ye ń ran àwọn òṣìṣẹ́ RCCG tí a fọwọ́sí lọ́wọ́ láti forúkọsílẹ̀ àwọn ìpinnu àti láti tọ́ wọn lẹ́yìn pẹ̀lú ìfẹ́.',
       'builtBy': 'Ẹni tí ó kọ́ ọ',
       'close': 'Pàdé',
       'toggleDarkMode': 'Yí ìmólẹ̀ dúdú padà',
@@ -160,8 +157,7 @@ class AppLocalizations {
       'enterCode': 'Tẹ kóòdù oní-nọ́ńbà mẹ́fà.',
       'networkError':
           'A kò lè dé Go-Ye. Ṣàyẹ̀wò ìsopọ̀ olupin kí o tún gbìyànjú.',
-      'decisionFormHelp':
-          'Forúkọsílẹ̀ ìpinnu náà lẹ́yìn tí ẹni náà bá ti fọwọ́ sí i ní kedere.',
+      'decisionFormHelp': 'Forúkọsílẹ̀ ìpinnu náà lẹ́yìn tí ẹni náà bá ti fọwọ́ sí i ní kedere.',
       'fullName': 'Orúkọ kíkún',
       'required': 'A nílò ibi yìí.',
       'phoneOptional': 'Nọ́ńbà fóònù (aṣàyàn)',

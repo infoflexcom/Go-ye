@@ -101,8 +101,8 @@ class _DesktopConvertTable extends StatelessWidget {
                   rows: page.items
                       .map(
                         (ConvertRecord convert) => DataRow(
-                          onSelectChanged: (_) =>
-                              Navigator.of(context).push<void>(
+                          onSelectChanged: (_) => Navigator.of(context)
+                              .push<void>(
                                 MaterialPageRoute<void>(
                                   builder: (_) => ConvertDetailScreen(
                                     convertId: convert.id,
