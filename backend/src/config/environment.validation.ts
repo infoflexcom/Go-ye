@@ -21,4 +21,6 @@ export const environmentValidationSchema = Joi.object({
   OTP_SEND_LIMIT_PER_IP_PER_HOUR: Joi.number().integer().positive().default(10),
   JWT_ACCESS_TTL_SECONDS: Joi.number().positive().default(900),
   JWT_REFRESH_TTL_SECONDS: Joi.number().positive().default(2592000),
+  FOLLOW_UP_SCHEDULER_ENABLED: Joi.boolean().default(true),
+  FOLLOW_UP_SCHEDULER_INTERVAL_SECONDS: Joi.number().integer().min(10).max(86400).default(60),
 });

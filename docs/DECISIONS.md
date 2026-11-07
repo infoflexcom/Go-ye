@@ -234,3 +234,14 @@ The copied `app/assets/branding/logo.jpg` is derived only from the approved RCCG
 The first Phase 4 increment stores the approved cadence as Global Admin-managed database rows: a 24-hour call, Day-3 prayer, Day-7 visit and a weekly check-in. The weekly check-in’s first occurrence defaults to Day 14, one week after the Day-7 visit, and carries a seven-day recurrence interval. Global Admin may change offsets or deactivate a step without an application release; each change is tamper-evidently audited.
 
 Parish assignment reads the active cadence transactionally and creates occurrence one of every active step. A unique `(convert, cadence step, occurrence)` key prevents duplicate initial tasks and protects later scheduler work. Configuration changes affect only newly assigned converts; scheduled history is never silently rescheduled. The next Phase 4 task will materialise subsequent weekly occurrences and durable idempotent job delivery. PostgreSQL cannot remove an enum label, so the migration’s rollback drops cadence schema/rows but intentionally leaves an unused `WEEKLY_CHECK_IN` label.
+
+## ADR-025 — Durable idempotent follow-up scheduling
+
+**Date:** 2026-11-07
+**Status:** Accepted
+
+A NestJS server-side scheduler runs at startup and at a configurable 60-second interval (`FOLLOW_UP_SCHEDULER_ENABLED`, `FOLLOW_UP_SCHEDULER_INTERVAL_SECONDS`). More than one API replica may run it: PostgreSQL is the coordination boundary, not in-memory timers. A completed recurring weekly check-in materialises exactly one successor, linked to its predecessor and protected both by occurrence identity and predecessor identity. Its original recurrence interval is snapshotted on the task, so later Global Admin cadence edits/deactivation do not reschedule an already-started journey. A missing/overdue check-in remains one visible outstanding action instead of silently creating an unbounded pile of future weekly tasks.
+
+Due pending tasks are converted to durable `follow_up_reminder_jobs`, with one deterministic `follow-up-task:<task-id>:due-reminder` idempotency key and a unique task/type pair. Concurrent scheduler runs can therefore create at most one reminder job. Workers atomically claim jobs with `FOR UPDATE SKIP LOCKED`, use a five-minute lease, and can mark a job delivered or retry it with a safe error code. There are at most eight delivery attempts; abandoned exhausted claims move to `DEAD_LETTER`. PII never appears in job keys or error values. The subsequent notification task must use this stable job key as the client notification identifier so a provider retry cannot produce another visible reminder.
+
+Pending jobs are cancelled before delivery when their task completes/cancels or the convert is privacy-restricted/merged. The queue and scheduler use a database system actor and are protected by RLS; standard client actors cannot read or mutate internal delivery jobs. Migration rollback is covered by an embedded-PostgreSQL down/up test.
