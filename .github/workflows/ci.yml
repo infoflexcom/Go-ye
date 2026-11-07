@@ -98,6 +98,35 @@ jobs:
         working-directory: app
         run: flutter test
 
+  format-client:
+    name: One-off canonical Dart formatter
+    if: >-
+      github.event_name == 'push' &&
+      github.event.head_commit.message == 'ci: run canonical Dart formatter'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve the active Flutter package graph
+        working-directory: app
+        run: flutter pub get
+      - name: Apply the SDK's canonical Dart format
+        working-directory: app
+        run: dart format lib test integration_test
+      - name: Commit only formatter output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/lib app/test app/integration_test
+          git diff --cached --quiet || git commit -m "style: format Flutter client"
+          git push
+
   android-debug-build:
     name: Android debug build
     needs: flutter-tests
