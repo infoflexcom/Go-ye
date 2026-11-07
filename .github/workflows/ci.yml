@@ -96,8 +96,8 @@ jobs:
   format-client:
     name: One-off canonical Dart formatter
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      inputs.format_client == true
+      (github.event_name == 'workflow_dispatch' && inputs.format_client == true) ||
+      (github.event_name == 'push' && github.event.head_commit.message == 'ci: run canonical Dart formatter')
     permissions:
       contents: write
     runs-on: ubuntu-latest
