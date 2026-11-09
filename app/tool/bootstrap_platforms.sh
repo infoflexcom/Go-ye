@@ -36,6 +36,56 @@ if [ -f "$android_manifest" ] && ! grep -q 'android.permission.POST_NOTIFICATION
   mv "$tmp_manifest" "$android_manifest"
 fi
 
+# flutter_local_notifications requires Java 8+ API desugaring on Android. Add
+# it after each generated runner refresh so a debug build works without any
+# church Firebase configuration. Support both current Kotlin DSL templates and
+# older Groovy templates used by a locally pinned Flutter SDK.
+configure_android_desugaring() {
+  gradle_file="$1"
+  syntax="$2"
+  [ -f "$gradle_file" ] || return 0
+  grep -q 'coreLibraryDesugaring' "$gradle_file" && return
+  python3 - "$gradle_file" "$syntax" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+syntax = sys.argv[2]
+source = path.read_text()
+line_ending = '\r\n' if '\r\n' in source else '\n'
+compile_options = re.search(r'(?m)^([ \t]*)compileOptions\s*\{\r?\n', source)
+if compile_options is None:
+    raise SystemExit(f'Unable to find compileOptions in {path}')
+indent = compile_options.group(1)
+if syntax == 'kts':
+    setting = f'{indent}    isCoreLibraryDesugaringEnabled = true{line_ending}'
+    dependency = (
+        f'{line_ending}dependencies {{{line_ending}'
+        f'{indent}coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4"){line_ending}'
+        f'}}{line_ending}'
+    )
+else:
+    setting = f'{indent}    coreLibraryDesugaringEnabled true{line_ending}'
+    dependency = (
+        f'{line_ending}dependencies {{{line_ending}'
+        f"{indent}coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'{line_ending}"
+        f'}}{line_ending}'
+    )
+source = source[:compile_options.end()] + setting + source[compile_options.end():]
+flutter_block = re.search(r'(?m)^[ \t]*flutter\s*\{', source)
+if flutter_block is None:
+    source = source.rstrip() + line_ending + dependency
+else:
+    prefix = source[:flutter_block.start()].rstrip()
+    source = prefix + line_ending + dependency + source[flutter_block.start():]
+path.write_text(source)
+PY
+}
+
+configure_android_desugaring 'android/app/build.gradle.kts' kts
+configure_android_desugaring 'android/app/build.gradle' groovy
+
 # Flutter's generated Windows runner expects this exact icon file. It is built
 # from the approved RCCG logo (not the INFOFLEX logo) and is intentionally
 # copied after every flutter create refresh.

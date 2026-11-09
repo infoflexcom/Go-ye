@@ -136,7 +136,7 @@ class _TodayFollowUpScreenState extends ConsumerState<TodayFollowUpScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: outcome,
+                    initialValue: outcome,
                     decoration: InputDecoration(
                       labelText: context.l10n.text('outcome'),
                     ),
@@ -308,7 +308,7 @@ class _TodayError extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: onRetry,
-              child: Text(context.l10n.tryAgain),
+              child: Text(context.l10n.text('tryAgain')),
             ),
           ],
         ),

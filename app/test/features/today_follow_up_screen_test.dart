@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goye/core/api_client.dart';
 import 'package:goye/core/app_providers.dart';
+import 'package:goye/core/models.dart';
 import 'package:goye/core/session_store.dart';
 import 'package:goye/features/follow_up/today_follow_up_screen.dart';
 import 'package:goye/l10n/app_localizations.dart';
