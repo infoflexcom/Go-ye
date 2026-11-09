@@ -374,8 +374,9 @@ class FollowUpTask {
       outcome: value['outcome'] is String ? value['outcome'] as String : null,
       note: value['note'] is String ? value['note'] as String : null,
       completedAt: _date(value['completedAt']),
-      completedBy:
-          value['completedBy'] is String ? value['completedBy'] as String : null,
+      completedBy: value['completedBy'] is String
+          ? value['completedBy'] as String
+          : null,
     );
   }
 }

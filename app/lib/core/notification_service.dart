@@ -50,10 +50,8 @@ class DeviceNotificationService {
       );
       await _plugin.initialize(settings);
       if (Platform.isAndroid) {
-        final android = _plugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >();
+        final android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
         await android?.createNotificationChannel(
           const AndroidNotificationChannel(
             'goye_follow_up',
@@ -65,7 +63,7 @@ class DeviceNotificationService {
         await android?.requestNotificationsPermission();
       }
       _initialised = true;
-    } catch {
+    } catch (_) {
       // A platform notification service may be disabled. Follow-up remains
       // available in the server-backed Today list.
     }
@@ -106,7 +104,7 @@ class DeviceNotificationService {
         payload: taskId,
       );
       await _rememberShown(taskId);
-    } catch {
+    } catch (_) {
       // Do not expose a native notification failure to a pastoral workflow.
     }
   }
@@ -127,7 +125,7 @@ class DeviceNotificationService {
       final shown = decoded.whereType<String>().toSet();
       _shownInProcess.addAll(shown);
       return shown.contains(taskId);
-    } catch {
+    } catch (_) {
       return false;
     }
   }
@@ -137,9 +135,8 @@ class DeviceNotificationService {
     try {
       final stored = await _storage.read(key: _localReminderStoreKey);
       final decoded = stored == null ? null : jsonDecode(stored);
-      final ids = decoded is List
-          ? decoded.whereType<String>().toList()
-          : <String>[];
+      final ids =
+          decoded is List ? decoded.whereType<String>().toList() : <String>[];
       ids.remove(taskId);
       ids.add(taskId);
       final retained = ids.length <= 250 ? ids : ids.sublist(ids.length - 250);
@@ -147,7 +144,7 @@ class DeviceNotificationService {
         key: _localReminderStoreKey,
         value: jsonEncode(retained),
       );
-    } catch {
+    } catch (_) {
       // In-memory de-duplication still protects the current app session.
     }
   }
@@ -207,7 +204,7 @@ class PushNotificationRegistration {
           unawaited(_notifications.showFollowUpReminder(taskId));
         }
       });
-    } catch {
+    } catch (_) {
       // Firebase needs church-provided native configuration. It stays optional
       // until that configuration is present; the Today list remains usable.
     }

@@ -69,21 +69,21 @@ final followUpRepositoryProvider = Provider<FollowUpRepository>((Ref ref) {
 
 final todayFollowUpTasksProvider =
     FutureProvider.autoDispose<List<FollowUpTask>>((Ref ref) {
-      return ref.watch(followUpRepositoryProvider).listToday();
-    });
+  return ref.watch(followUpRepositoryProvider).listToday();
+});
 
 final deviceNotificationServiceProvider =
     Provider<DeviceNotificationService>((Ref ref) {
-      return DeviceNotificationService();
-    });
+  return DeviceNotificationService();
+});
 
 final pushNotificationRegistrationProvider =
     Provider<PushNotificationRegistration>((Ref ref) {
-      return PushNotificationRegistration(
-        repository: ref.watch(followUpRepositoryProvider),
-        notifications: ref.watch(deviceNotificationServiceProvider),
-      );
-    });
+  return PushNotificationRegistration(
+    repository: ref.watch(followUpRepositoryProvider),
+    notifications: ref.watch(deviceNotificationServiceProvider),
+  );
+});
 
 final unassignedConvertsProvider =
     FutureProvider.autoDispose<List<UnassignedConvert>>((Ref ref) {

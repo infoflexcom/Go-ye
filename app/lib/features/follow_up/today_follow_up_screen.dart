@@ -75,10 +75,10 @@ class _TodayFollowUpScreenState extends ConsumerState<TodayFollowUpScreen> {
               separatorBuilder: (_, int index) => const SizedBox(height: 10),
               itemBuilder: (BuildContext context, int index) =>
                   _FollowUpTaskCard(
-                    task: values[index],
-                    onDone: () => _complete(values[index]),
-                    onOutcome: () => _completeWithOutcome(values[index]),
-                  ),
+                task: values[index],
+                onDone: () => _complete(values[index]),
+                onOutcome: () => _completeWithOutcome(values[index]),
+              ),
             ),
           );
         },
@@ -114,75 +114,75 @@ class _TodayFollowUpScreenState extends ConsumerState<TodayFollowUpScreen> {
     var outcome = 'COMPLETED';
     final selection =
         await showModalBottomSheet<({String outcome, String? note})>(
-          context: context,
-          isScrollControlled: true,
-          builder: (BuildContext sheetContext) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setSheetState) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    24,
-                    24,
-                    MediaQuery.viewInsetsOf(context).bottom + 24,
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                MediaQuery.viewInsetsOf(context).bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    context.l10n.text('recordOutcome'),
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        context.l10n.text('recordOutcome'),
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: outcome,
-                        decoration: InputDecoration(
-                          labelText: context.l10n.text('outcome'),
-                        ),
-                        items: _outcomes
-                            .map(
-                              (String value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(_outcomeLabel(context, value)),
-                              ),
-                            )
-                            .toList(growable: false),
-                        onChanged: (String? value) {
-                          if (value != null) {
-                            setSheetState(() => outcome = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: noteController,
-                        maxLength: 2000,
-                        minLines: 2,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          labelText: context.l10n.text('noteOptional'),
-                          alignLabelWithHint: true,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.of(sheetContext).pop((
-                          outcome: outcome,
-                          note: noteController.text.trim().isEmpty
-                              ? null
-                              : noteController.text.trim(),
-                        )),
-                        icon: const Icon(Icons.check),
-                        label: Text(context.l10n.text('done')),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: outcome,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.text('outcome'),
+                    ),
+                    items: _outcomes
+                        .map(
+                          (String value) => DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(_outcomeLabel(context, value)),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        setSheetState(() => outcome = value);
+                      }
+                    },
                   ),
-                );
-              },
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteController,
+                    maxLength: 2000,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.text('noteOptional'),
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(sheetContext).pop((
+                      outcome: outcome,
+                      note: noteController.text.trim().isEmpty
+                          ? null
+                          : noteController.text.trim(),
+                    )),
+                    icon: const Icon(Icons.check),
+                    label: Text(context.l10n.text('done')),
+                  ),
+                ],
+              ),
             );
           },
         );
+      },
+    );
     noteController.dispose();
     if (selection == null) {
       return;
