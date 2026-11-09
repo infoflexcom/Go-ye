@@ -322,3 +322,60 @@ class ScopedCount {
     );
   }
 }
+
+class FollowUpTask {
+  const FollowUpTask({
+    required this.id,
+    required this.convertId,
+    required this.parishId,
+    required this.taskType,
+    required this.occurrenceNumber,
+    required this.dueAt,
+    required this.status,
+    required this.convertName,
+    this.phone,
+    this.outcome,
+    this.note,
+    this.completedAt,
+    this.completedBy,
+  });
+
+  final String id;
+  final String convertId;
+  final String parishId;
+  final String taskType;
+  final int occurrenceNumber;
+  final DateTime dueAt;
+  final String status;
+  final String convertName;
+  final String? phone;
+  final String? outcome;
+  final String? note;
+  final DateTime? completedAt;
+  final String? completedBy;
+
+  factory FollowUpTask.fromJson(Map<String, Object?> value) {
+    final dueAt = _date(value['dueAt']);
+    if (dueAt == null) {
+      throw const FormatException(
+        'The server response did not contain follow-up dueAt.',
+      );
+    }
+    return FollowUpTask(
+      id: _requiredString(value, 'id'),
+      convertId: _requiredString(value, 'convertId'),
+      parishId: _requiredString(value, 'parishId'),
+      taskType: _requiredString(value, 'taskType'),
+      occurrenceNumber: _requiredInt(value, 'occurrenceNumber'),
+      dueAt: dueAt,
+      status: _requiredString(value, 'status'),
+      convertName: _requiredString(value, 'convertName'),
+      phone: value['phone'] is String ? value['phone'] as String : null,
+      outcome: value['outcome'] is String ? value['outcome'] as String : null,
+      note: value['note'] is String ? value['note'] as String : null,
+      completedAt: _date(value['completedAt']),
+      completedBy:
+          value['completedBy'] is String ? value['completedBy'] as String : null,
+    );
+  }
+}

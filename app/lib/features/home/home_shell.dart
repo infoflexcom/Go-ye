@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,9 +14,11 @@ import '../directory/hierarchy_browser_screen.dart';
 import '../converts/converts_list_screen.dart';
 import '../converts/new_decision_screen.dart';
 import '../converts/unassigned_pool_screen.dart';
+import '../follow_up/today_follow_up_screen.dart';
 
 enum _WorkspaceDestination {
   dashboard,
+  today,
   newDecision,
   converts,
   unassigned,
@@ -32,11 +37,63 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   var _selectedIndex = 0;
+  Timer? _windowsNotificationSync;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPlatformNotifications();
+    });
+  }
+
+  @override
+  void dispose() {
+    _windowsNotificationSync?.cancel();
+    super.dispose();
+  }
+
+  void _startPlatformNotifications() {
+    if (Platform.isAndroid) {
+      unawaited(ref.read(deviceNotificationServiceProvider).initialize());
+      if (_canFollowUpWork(widget.session)) {
+        unawaited(
+          ref
+              .read(pushNotificationRegistrationProvider)
+              .registerAndroidDevice(),
+        );
+      }
+    }
+    if (Platform.isWindows && _canFollowUpWork(widget.session)) {
+      unawaited(_syncWindowsFollowUpNotifications());
+      _windowsNotificationSync = Timer.periodic(
+        const Duration(minutes: 1),
+        (_) {
+          unawaited(_syncWindowsFollowUpNotifications());
+        },
+      );
+    }
+  }
+
+  Future<void> _syncWindowsFollowUpNotifications() async {
+    if (!mounted) {
+      return;
+    }
+    try {
+      final tasks = await ref.read(followUpRepositoryProvider).listToday();
+      await ref
+          .read(deviceNotificationServiceProvider)
+          .syncWindowsTodayTasks(tasks);
+    } on Object {
+      // Windows keeps the authenticated Today screen available for an explicit retry.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final destinations = <_WorkspaceDestination>[
       _WorkspaceDestination.dashboard,
+      if (_canFollowUpWork(widget.session)) _WorkspaceDestination.today,
       if (_canRegisterConverts(widget.session))
         _WorkspaceDestination.newDecision,
       if (_canRegisterConverts(widget.session)) _WorkspaceDestination.converts,
@@ -53,6 +110,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       _WorkspaceDestination.dashboard => _DashboardWelcome(
           session: widget.session,
         ),
+      _WorkspaceDestination.today => const TodayFollowUpScreen(),
       _WorkspaceDestination.newDecision => NewDecisionScreen(
           isGlobalAdmin: widget.session.isGlobalAdmin,
         ),
@@ -156,6 +214,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           icon: const Icon(Icons.dashboard_outlined),
           label: context.l10n.dashboard,
         ),
+      _WorkspaceDestination.today => NavigationDestination(
+          icon: const Icon(Icons.today_outlined),
+          label: context.l10n.text('todayFollowUp'),
+        ),
       _WorkspaceDestination.newDecision => NavigationDestination(
           icon: const Icon(Icons.person_add_alt_1_outlined),
           label: context.l10n.newDecision,
@@ -188,6 +250,20 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       icon: navigation.icon,
       label: Text(navigation.label),
     );
+  }
+
+  bool _canFollowUpWork(Session session) {
+    const followUpRoles = <String>{
+      'COUNTRY_ADMIN',
+      'REGION_LEADER',
+      'PROVINCE_LEADER',
+      'ZONE_LEADER',
+      'AREA_LEADER',
+      'PARISH_PASTOR',
+      'SOUL_WINNER',
+      'FOLLOW_UP_WORKER',
+    };
+    return session.isGlobalAdmin || session.roles.any(followUpRoles.contains);
   }
 
   bool _canRegisterConverts(Session session) {

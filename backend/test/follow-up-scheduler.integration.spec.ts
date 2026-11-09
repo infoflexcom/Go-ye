@@ -4,8 +4,11 @@ import { AuditService } from '../src/audit/audit.service.js';
 import type { AuthenticatedActor } from '../src/authorization/authorization.types.js';
 import { ConvertsService } from '../src/converts/converts.service.js';
 import { DatabaseService } from '../src/database/database.service.js';
+import type { FcmPushGatewayService } from '../src/follow-up/fcm-push-gateway.service.js';
+import { FollowUpReminderDeliveryService } from '../src/follow-up/follow-up-reminder-delivery.service.js';
 import { FollowUpReminderQueueService } from '../src/follow-up/follow-up-reminder-queue.service.js';
 import { FollowUpSchedulerService } from '../src/follow-up/follow-up-scheduler.service.js';
+import { FollowUpTasksService } from '../src/follow-up/follow-up-tasks.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
 import { PrivacySettingsService } from '../src/privacy/privacy-settings.service.js';
 import type { TestDatabase } from './support/embedded-postgres.js';
@@ -30,6 +33,8 @@ describe('FollowUpSchedulerService', () => {
   let converts: ConvertsService;
   let scheduler: FollowUpSchedulerService;
   let reminderQueue: FollowUpReminderQueueService;
+  let followUpTasks: FollowUpTasksService;
+  let encryption: FieldEncryptionService;
   let parishActor: ParishActor;
 
   beforeAll(async () => {
@@ -43,15 +48,12 @@ describe('FollowUpSchedulerService', () => {
     });
     database = new DatabaseService(config);
     const audit = new AuditService();
-    converts = new ConvertsService(
-      database,
-      new FieldEncryptionService(config),
-      audit,
-      config,
-      new PrivacySettingsService(database, audit, config),
-    );
+    encryption = new FieldEncryptionService(config);
+    const privacySettings = new PrivacySettingsService(database, audit, config);
+    converts = new ConvertsService(database, encryption, audit, config, privacySettings);
     scheduler = new FollowUpSchedulerService(database, config);
     reminderQueue = new FollowUpReminderQueueService(database);
+    followUpTasks = new FollowUpTasksService(database, encryption, privacySettings, audit, config);
 
     const units = new Map<string, Unit>();
     async function addUnit(type: string, code: string, parentCode?: string): Promise<void> {
@@ -108,9 +110,13 @@ describe('FollowUpSchedulerService', () => {
 
     await testDatabase.pool.query(
       `UPDATE follow_up_tasks
-       SET due_at = $2, status = 'COMPLETED', completed_at = $1
-       WHERE convert_id = $3 AND task_type = 'WEEKLY_CHECK_IN'`,
-      [now, new Date('2026-11-24T12:00:00.000Z'), convert.id],
+       SET due_at = $2,
+           status = 'COMPLETED',
+           completed_at = $1,
+           completed_by = $3,
+           outcome = 'COMPLETED'
+       WHERE convert_id = $4 AND task_type = 'WEEKLY_CHECK_IN'`,
+      [now, new Date('2026-11-24T12:00:00.000Z'), parishActor.id, convert.id],
     );
     await testDatabase.pool.query(
       `UPDATE follow_up_tasks
@@ -208,5 +214,88 @@ describe('FollowUpSchedulerService', () => {
       { status: 'DELIVERED', attempts: 1 },
       { status: 'DELIVERED', attempts: 2 },
     ]);
+  });
+
+  it('delivers a due reminder only through a registered Android device with a stable idempotency key', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Push Reminder Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const now = new Date('2026-12-02T12:00:00.000Z');
+    await testDatabase.pool.query(
+      `UPDATE follow_up_tasks
+       SET status = CASE WHEN task_type = 'CALL_24H' THEN 'PENDING'::follow_up_task_status
+                         ELSE 'CANCELLED'::follow_up_task_status END,
+           due_at = $1,
+           completed_at = NULL,
+           completed_by = NULL,
+           outcome = NULL,
+           outcome_note_encrypted = NULL
+       WHERE convert_id = $2`,
+      [now, convert.id],
+    );
+    const deviceToken = 'fcm-device-token-for-scheduler-integration-test-0123456789';
+    const device = await testDatabase.pool.query<{ id: string }>(
+      `INSERT INTO devices (
+         user_id, device_identifier_hash, platform, push_token_encrypted
+       ) VALUES ($1, $2, 'ANDROID', $3) RETURNING id`,
+      [parishActor.id, 'scheduler-reminder-device-hash', encryption.encrypt(deviceToken)],
+    );
+    await testDatabase.pool.query(
+      `INSERT INTO sessions (user_id, device_id, refresh_token_hash, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        parishActor.id,
+        device.rows[0].id,
+        'scheduler-reminder-refresh-token-hash',
+        new Date('2026-12-03T12:00:00.000Z'),
+      ],
+    );
+
+    await testDatabase.pool.query(
+      `UPDATE follow_up_tasks
+       SET status = 'CANCELLED'
+       WHERE status = 'PENDING' AND convert_id <> $1`,
+      [convert.id],
+    );
+    await expect(scheduler.run(now)).resolves.toMatchObject({ enqueuedReminderJobs: 1 });
+    const sent: {
+      token: string;
+      reminderJobId: string;
+      followUpTaskId: string;
+      idempotencyKey: string;
+    }[] = [];
+    const fcm = {
+      isConfigured: () => true,
+      sendDueReminder: (message: (typeof sent)[number]) => {
+        sent.push(message);
+        return Promise.resolve();
+      },
+    } as unknown as FcmPushGatewayService;
+    const delivery = new FollowUpReminderDeliveryService(
+      reminderQueue,
+      followUpTasks,
+      fcm,
+      new ConfigService({ FCM_DELIVERY_INTERVAL_SECONDS: 30 }),
+    );
+
+    await expect(delivery.deliverOnce(now)).resolves.toBe(1);
+    expect(sent).toHaveLength(1);
+    const delivered = sent[0];
+    expect(delivered.token).toBe(deviceToken);
+    expect(delivered.followUpTaskId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(delivered.idempotencyKey).toMatch(/^follow-up-task:[0-9a-f-]{36}:due-reminder$/);
+    const job = await testDatabase.pool.query<{ status: string; idempotency_key: string }>(
+      `SELECT status::text, idempotency_key
+       FROM follow_up_reminder_jobs
+       WHERE follow_up_task_id = $1`,
+      [delivered.followUpTaskId],
+    );
+    expect(job.rows).toEqual([{ status: 'DELIVERED', idempotency_key: delivered.idempotencyKey }]);
+    const storedToken = await testDatabase.pool.query<{ push_token_encrypted: Buffer }>(
+      `SELECT push_token_encrypted FROM devices WHERE id = $1`,
+      [device.rows[0].id],
+    );
+    expect(storedToken.rows[0].push_token_encrypted.toString('utf8')).not.toContain(deviceToken);
   });
 });

@@ -13,7 +13,7 @@ Phase 4 continues the same NestJS/PostgreSQL authority boundary. No real convert
 
 - [x] **4.1 Configurable cadence engine:** a Global Admin-managed, auditable database cadence now seeds 24-hour call, Day-3 prayer, Day-7 visit and Day-14 first weekly check-in tasks when a convert enters parish follow-up. Each task is tied to a cadence step and occurrence number, so a unique constraint prevents duplicate first occurrences; changes affect new assignments only. The recurring materialisation job is deliberately deferred to 4.2.
 - [x] **4.2 Idempotent server-side job queue/scheduler:** PostgreSQL materialises the next weekly occurrence only after completion, snapshots its interval, and creates one durable due-reminder job per task. Concurrent scheduler runs, claims, retry leases and a deterministic key are database-idempotent; notification delivery remains 4.3.
-- [ ] **4.3 Today list, outcomes/notes and Android/Windows notifications**
+- [ ] **4.3 Today list, outcomes/notes and Android/Windows notifications:** implementation is awaiting Flutter/Windows CI validation. It includes scoped Today and encrypted one-tap completion outcomes, FCM device registration/durable delivery and Windows local toast sync; real-device notification evidence remains required by the Phase 4 gate ([runbook](PHASE_4_NOTIFICATION_ACCEPTANCE.md)).
 - [ ] **4.4 Overdue escalation and Neglected Converts lists**
 - [ ] **4.5 Baptism and planting journey completion tracking**
 - [ ] **4.6 Simulated 30-day timeline test**

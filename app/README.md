@@ -28,6 +28,16 @@ The bootstrap script is intentionally committed because this Linux workspace doe
 
 Both launches must use the same API URL and authorised credentials. For an Android emulator against a backend on the development host, use `http://10.0.2.2:3000/api/v1/`; for Windows running on that host, use `http://localhost:3000/api/v1/`. For a physical phone and a separate Windows machine, use the same TLS LAN/VPN hostname, for example `https://goye-pilot.example.org/api/v1/`. Do not use `localhost` on a physical phone: it refers to the phone itself.
 
+## Follow-up notifications
+
+The Today workspace records a one-tap **DONE** result or an outcome with an optional note. Android FCM is deliberately opt-in at build time and at deployment time:
+
+1. Church IT creates/owns the Firebase project and keeps service-account JSON in approved secret storage. `google-services.json`, service-account files, FlutterFire-generated configuration and real Firebase values do not belong in this repository.
+2. Set the backend `FCM_ENABLED=true`, `FIREBASE_PROJECT_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` through its secret store. Obtain the Android app configuration from the church Firebase project and supply it only at build/run time: `--dart-define=FCM_ENABLED=true --dart-define=FIREBASE_API_KEY=... --dart-define=FIREBASE_APP_ID=... --dart-define=FIREBASE_MESSAGING_SENDER_ID=... --dart-define=FIREBASE_PROJECT_ID=...`. These values initialise Firebase directly, so a committed Android Google Services file/Gradle change is not required.
+3. Sign in on the Android device. The client requests notification permission, creates the `goye_follow_up` notification channel, obtains an FCM registration token and sends that encrypted token only to the authenticated Go-Ye API.
+
+FCM notifications intentionally contain no convert name, phone or note; opening Go-Ye fetches the authorised Today item from the shared server. Windows does not use Firebase Messaging. While an authenticated Windows client is running, it syncs the server-backed Today list every minute and shows a local Windows toast once per task ID. The local plugin has a stable App User Model ID and uses the same task identity for de-duplication. A packaged MSIX build is recommended for full Windows notification history management.
+
 ## Android/Windows shared-server verification
 
 Run this acceptance check only with a disposable, authorised pilot/test account and a server that both devices can reach over TLS:

@@ -5,6 +5,7 @@ import type { AuthenticatedActor } from '../src/authorization/authorization.type
 import { ConvertsService } from '../src/converts/converts.service.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { FollowUpCadenceService } from '../src/follow-up/follow-up-cadence.service.js';
+import { FollowUpTasksService } from '../src/follow-up/follow-up-tasks.service.js';
 import { FieldEncryptionService } from '../src/privacy/field-encryption.service.js';
 import { PrivacyRemovalService } from '../src/privacy/privacy-removal.service.js';
 import { PrivacySettingsService } from '../src/privacy/privacy-settings.service.js';
@@ -31,6 +32,7 @@ describe('ConvertsService', () => {
   let privacy: PrivacyRemovalService;
   let privacySettings: PrivacySettingsService;
   let cadence: FollowUpCadenceService;
+  let followUpTasks: FollowUpTasksService;
   let areaActor: TestActor;
   let parishActor: TestActor;
   let privacyActor: TestActor;
@@ -50,6 +52,7 @@ describe('ConvertsService', () => {
     const audit = new AuditService();
     privacySettings = new PrivacySettingsService(database, audit, config);
     cadence = new FollowUpCadenceService(database, audit, config);
+    followUpTasks = new FollowUpTasksService(database, encryption, privacySettings, audit, config);
     converts = new ConvertsService(database, encryption, audit, config, privacySettings);
     privacy = new PrivacyRemovalService(database, encryption, audit, config);
 
@@ -615,6 +618,152 @@ describe('ConvertsService', () => {
       [parishActor.id],
     );
     expect(audit.rows).toEqual([]);
+  });
+
+  it('lists today tasks and completes one once with an encrypted outcome note and chronology', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Today Follow-up Convert',
+      phone: '+234 803 000 0055',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    await testDatabase.pool.query(
+      `UPDATE follow_up_tasks
+       SET status = CASE WHEN task_type = 'CALL_24H' THEN 'PENDING'::follow_up_task_status
+                         ELSE 'CANCELLED'::follow_up_task_status END,
+           due_at = now(),
+           completed_at = NULL,
+           completed_by = NULL,
+           outcome = NULL,
+           outcome_note_encrypted = NULL
+       WHERE convert_id = $1`,
+      [convert.id],
+    );
+
+    const today = await followUpTasks.listToday(parishActor);
+    const call = today.find((task) => task.convertId === convert.id);
+    expect(call).toBeDefined();
+    if (!call) {
+      throw new Error('Expected the call task in the Today list.');
+    }
+    expect(call).toMatchObject({
+      taskType: 'CALL_24H',
+      occurrenceNumber: 1,
+      convertName: 'Today Follow-up Convert',
+      phone: '+2348030000055',
+      status: 'PENDING',
+    });
+
+    await expect(
+      followUpTasks.complete(parishActor, call.id, {
+        outcome: 'NO_CONTACT',
+        note: 'Called at the agreed time; no answer.',
+      }),
+    ).resolves.toMatchObject({
+      id: call.id,
+      status: 'COMPLETED',
+      outcome: 'NO_CONTACT',
+      note: 'Called at the agreed time; no answer.',
+      completedBy: parishActor.id,
+    });
+    await expect(
+      followUpTasks.complete(parishActor, call.id, { outcome: 'COMPLETED' }),
+    ).rejects.toThrow(/already been resolved/i);
+    await expect(followUpTasks.listToday(parishActor)).resolves.not.toContainEqual(
+      expect.objectContaining({ id: call.id }),
+    );
+
+    const chronology = await testDatabase.pool.query<{
+      event_type: string;
+      metadata: Record<string, unknown>;
+      note_encrypted: Buffer;
+    }>(
+      `SELECT event_type::text, metadata, note_encrypted
+       FROM convert_timeline_events
+       WHERE convert_id = $1 AND event_type = 'FOLLOW_UP_COMPLETED'`,
+      [convert.id],
+    );
+    expect(chronology.rows).toHaveLength(1);
+    expect(chronology.rows[0].event_type).toBe('FOLLOW_UP_COMPLETED');
+    expect(chronology.rows[0].metadata['taskId']).toBe(call.id);
+    expect(chronology.rows[0].metadata['outcome']).toBe('NO_CONTACT');
+    expect(chronology.rows[0].note_encrypted.toString('utf8')).not.toContain('no answer');
+
+    const audit = await testDatabase.pool.query<{
+      action: string;
+      metadata: Record<string, unknown>;
+    }>(
+      `SELECT action, metadata FROM audit_log
+       WHERE resource_id = $1 AND action = 'FOLLOW_UP_TASK_COMPLETED'`,
+      [call.id],
+    );
+    expect(audit.rows).toEqual([
+      {
+        action: 'FOLLOW_UP_TASK_COMPLETED',
+        metadata: {
+          taskType: 'CALL_24H',
+          occurrenceNumber: 1,
+          outcome: 'NO_CONTACT',
+          noteRecorded: true,
+        },
+      },
+    ]);
+  });
+
+  it('does not allow a Parish worker to complete a task outside that worker’s hierarchy scope', async () => {
+    const convert = await converts.create(areaActor, {
+      fullName: 'Other Parish Follow-up Convert',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    await converts.assignToParish(areaActor, convert.id, {
+      parishId: units.get('NG-PAR-A')!.id,
+    });
+    const task = await testDatabase.pool.query<{ id: string }>(
+      `SELECT id
+       FROM follow_up_tasks
+       WHERE convert_id = $1 AND task_type = 'CALL_24H'`,
+      [convert.id],
+    );
+    await expect(
+      followUpTasks.complete(parishActor, task.rows[0].id, { outcome: 'COMPLETED' }),
+    ).rejects.toThrow(/not found in actor scope/i);
+  });
+
+  it('encrypts an active Android session FCM token before durable reminder delivery', async () => {
+    const device = await testDatabase.pool.query<{ id: string }>(
+      `INSERT INTO devices (user_id, device_identifier_hash, platform)
+       VALUES ($1, $2, 'ANDROID') RETURNING id`,
+      [parishActor.id, 'today-follow-up-android-device'],
+    );
+    await testDatabase.pool.query(
+      `INSERT INTO sessions (id, user_id, device_id, refresh_token_hash, expires_at)
+       VALUES ($1, $2, $3, $4, now() + interval '1 day')`,
+      [
+        parishActor.sessionId,
+        parishActor.id,
+        device.rows[0].id,
+        'today-follow-up-android-refresh-token',
+      ],
+    );
+    const token = 'fcm-registration-token-for-encrypted-storage-0123456789';
+    await expect(followUpTasks.registerPushToken(parishActor, { token })).resolves.toEqual({
+      registered: true,
+    });
+    const stored = await testDatabase.pool.query<{ push_token_encrypted: Buffer }>(
+      `SELECT push_token_encrypted FROM devices WHERE id = $1`,
+      [device.rows[0].id],
+    );
+    expect(stored.rows[0].push_token_encrypted.toString('utf8')).not.toContain(token);
+    const audit = await testDatabase.pool.query<{
+      action: string;
+      metadata: Record<string, unknown>;
+    }>(
+      `SELECT action, metadata FROM audit_log
+       WHERE resource_id = $1 AND action = 'FOLLOW_UP_PUSH_TOKEN_REGISTERED'`,
+      [device.rows[0].id],
+    );
+    expect(audit.rows).toEqual([
+      { action: 'FOLLOW_UP_PUSH_TOKEN_REGISTERED', metadata: { platform: 'ANDROID' } },
+    ]);
   });
 
   it('masks phone numbers for above-Parish reads when the Global Admin switches the server setting', async () => {

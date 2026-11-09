@@ -23,4 +23,9 @@ export const environmentValidationSchema = Joi.object({
   JWT_REFRESH_TTL_SECONDS: Joi.number().positive().default(2592000),
   FOLLOW_UP_SCHEDULER_ENABLED: Joi.boolean().default(true),
   FOLLOW_UP_SCHEDULER_INTERVAL_SECONDS: Joi.number().integer().min(10).max(86400).default(60),
+  FOLLOW_UP_TIME_ZONE: Joi.string().max(64).default('Africa/Lagos'),
+  FCM_ENABLED: Joi.boolean().default(false),
+  FCM_DELIVERY_INTERVAL_SECONDS: Joi.number().integer().min(10).max(86400).default(30),
+  FIREBASE_PROJECT_ID: Joi.string().allow('').max(255).default(''),
+  FIREBASE_SERVICE_ACCOUNT_JSON: Joi.string().allow('').max(20000).default(''),
 });

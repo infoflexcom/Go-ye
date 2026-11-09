@@ -19,6 +19,23 @@ remove_placeholder_runner windows
 # get` CI step, so runner generation cannot mask a package-resolution failure.
 flutter create --no-pub --platforms=android,ios,windows --project-name goye --org org.rccg .
 
+# Android 13+ requires this runtime-granted permission before a local foreground
+# or FCM notification can be shown. The client requests it through the local
+# notification plugin; the church-owned Firebase config is injected separately.
+android_manifest='android/app/src/main/AndroidManifest.xml'
+if [ -f "$android_manifest" ] && ! grep -q 'android.permission.POST_NOTIFICATIONS' "$android_manifest"; then
+  tmp_manifest="${android_manifest}.tmp"
+  awk '
+    /<manifest / {
+      print
+      print "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />"
+      next
+    }
+    { print }
+  ' "$android_manifest" > "$tmp_manifest"
+  mv "$tmp_manifest" "$android_manifest"
+fi
+
 # Flutter's generated Windows runner expects this exact icon file. It is built
 # from the approved RCCG logo (not the INFOFLEX logo) and is intentionally
 # copied after every flutter create refresh.

@@ -6,7 +6,9 @@ import 'models.dart';
 import '../features/admin/admin_reports_repository.dart';
 import '../features/directory/directory_repository.dart';
 import '../features/converts/converts_repository.dart';
+import '../features/follow_up/follow_up_repository.dart';
 import '../features/reports/reports_repository.dart';
+import 'notification_service.dart';
 import 'session_store.dart';
 
 const String configuredApiBaseUrl = String.fromEnvironment(
@@ -60,6 +62,28 @@ final convertsRepositoryProvider = Provider<ConvertsRepository>((Ref ref) {
 final convertsProvider = FutureProvider.autoDispose<ConvertPage>((Ref ref) {
   return ref.watch(convertsRepositoryProvider).list();
 });
+
+final followUpRepositoryProvider = Provider<FollowUpRepository>((Ref ref) {
+  return FollowUpRepository(ref.watch(apiClientProvider));
+});
+
+final todayFollowUpTasksProvider =
+    FutureProvider.autoDispose<List<FollowUpTask>>((Ref ref) {
+      return ref.watch(followUpRepositoryProvider).listToday();
+    });
+
+final deviceNotificationServiceProvider =
+    Provider<DeviceNotificationService>((Ref ref) {
+      return DeviceNotificationService();
+    });
+
+final pushNotificationRegistrationProvider =
+    Provider<PushNotificationRegistration>((Ref ref) {
+      return PushNotificationRegistration(
+        repository: ref.watch(followUpRepositoryProvider),
+        notifications: ref.watch(deviceNotificationServiceProvider),
+      );
+    });
 
 final unassignedConvertsProvider =
     FutureProvider.autoDispose<List<UnassignedConvert>>((Ref ref) {

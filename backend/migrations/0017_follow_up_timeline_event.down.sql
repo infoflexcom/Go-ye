@@ -1,0 +1,2 @@
+-- PostgreSQL cannot safely remove an individual enum label.
+-- The unused FOLLOW_UP_COMPLETED value is intentionally retained on rollback.
