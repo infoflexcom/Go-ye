@@ -8,9 +8,12 @@ import '../../core/api_client.dart';
 import '../../core/app_providers.dart';
 import '../../core/models.dart';
 import '../../l10n/app_localizations.dart';
+import 'follow_up_risks_screen.dart';
 
 class TodayFollowUpScreen extends ConsumerStatefulWidget {
-  const TodayFollowUpScreen({super.key});
+  const TodayFollowUpScreen({this.showSupervisionLists = false, super.key});
+
+  final bool showSupervisionLists;
 
   @override
   ConsumerState<TodayFollowUpScreen> createState() =>
@@ -41,6 +44,16 @@ class _TodayFollowUpScreenState extends ConsumerState<TodayFollowUpScreen> {
       appBar: AppBar(
         title: Text(context.l10n.text('todayFollowUp')),
         actions: <Widget>[
+          if (widget.showSupervisionLists)
+            IconButton(
+              tooltip: context.l10n.text('followUpRisks'),
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => const FollowUpRisksScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.warning_amber_outlined),
+            ),
           IconButton(
             tooltip: context.l10n.text('refresh'),
             onPressed: () => ref.invalidate(todayFollowUpTasksProvider),

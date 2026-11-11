@@ -38,6 +38,10 @@ The Today workspace records a one-tap **DONE** result or an outcome with an opti
 
 FCM notifications intentionally contain no convert name, phone or note; opening Go-Ye fetches the authorised Today item from the shared server. Windows does not use Firebase Messaging. While an authenticated Windows client is running, it syncs the server-backed Today list every minute and shows a local Windows toast once per task ID. The local plugin has a stable App User Model ID and uses the same task identity for de-duplication. A packaged MSIX build is recommended for full Windows notification history management.
 
+## Follow-up supervision
+
+The Today toolbar exposes **Follow-up risks** only to Parish Pastors and hierarchy leadership (plus Global Admin). **Escalations** shows scoped pending tasks immediately after their due time; **Neglected** shows one row per active convert whose oldest pending task has exceeded the backend `FOLLOW_UP_NEGLECTED_AFTER_HOURS` grace period (24 hours by default). Both views are server-scoped, respect runtime phone masking and may only resolve work through the existing outcome flow.
+
 ## Android/Windows shared-server verification
 
 Run this acceptance check only with a disposable, authorised pilot/test account and a server that both devices can reach over TLS:

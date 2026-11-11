@@ -323,6 +323,39 @@ class ScopedCount {
   }
 }
 
+class FollowUpRiskPage<T> {
+  const FollowUpRiskPage({required this.total, required this.items});
+
+  final int total;
+  final List<T> items;
+
+  factory FollowUpRiskPage.fromJson(
+    Map<String, Object?> value,
+    T Function(Map<String, Object?>) itemFromJson,
+  ) {
+    final rawItems = value['items'];
+    final rawTotal = value['total'];
+    if (rawItems is! List) {
+      throw const FormatException(
+        'The server response did not contain follow-up risk items.',
+      );
+    }
+    return FollowUpRiskPage<T>(
+      total: rawTotal is num ? rawTotal.toInt() : 0,
+      items: rawItems
+          .whereType<Map>()
+          .map(
+            (Map<Object?, Object?> item) => itemFromJson(
+              item.map<String, Object?>((Object? key, Object? itemValue) {
+                return MapEntry<String, Object?>(key.toString(), itemValue);
+              }),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
 class FollowUpTask {
   const FollowUpTask({
     required this.id,
@@ -377,6 +410,78 @@ class FollowUpTask {
       completedBy: value['completedBy'] is String
           ? value['completedBy'] as String
           : null,
+    );
+  }
+}
+
+class OverdueFollowUpTask {
+  const OverdueFollowUpTask({
+    required this.task,
+    required this.parishName,
+    required this.overdueMinutes,
+  });
+
+  final FollowUpTask task;
+  final String parishName;
+  final int overdueMinutes;
+
+  factory OverdueFollowUpTask.fromJson(Map<String, Object?> value) {
+    final rawMinutes = value['overdueMinutes'];
+    return OverdueFollowUpTask(
+      task: FollowUpTask.fromJson(value),
+      parishName: _requiredString(value, 'parishName'),
+      overdueMinutes: rawMinutes is num ? rawMinutes.toInt() : 0,
+    );
+  }
+}
+
+class NeglectedConvert {
+  const NeglectedConvert({
+    required this.convertId,
+    required this.parishId,
+    required this.parishName,
+    required this.convertName,
+    required this.phone,
+    required this.oldestOverdueTaskType,
+    required this.oldestOverdueOccurrenceNumber,
+    required this.oldestOverdueDueAt,
+    required this.overdueTaskCount,
+    required this.neglectedForMinutes,
+  });
+
+  final String convertId;
+  final String parishId;
+  final String parishName;
+  final String convertName;
+  final String? phone;
+  final String oldestOverdueTaskType;
+  final int oldestOverdueOccurrenceNumber;
+  final DateTime oldestOverdueDueAt;
+  final int overdueTaskCount;
+  final int neglectedForMinutes;
+
+  factory NeglectedConvert.fromJson(Map<String, Object?> value) {
+    final dueAt = _date(value['oldestOverdueDueAt']);
+    if (dueAt == null) {
+      throw const FormatException(
+        'The server response did not contain neglected convert overdue time.',
+      );
+    }
+    final rawOccurrence = value['oldestOverdueOccurrenceNumber'];
+    final rawCount = value['overdueTaskCount'];
+    final rawMinutes = value['neglectedForMinutes'];
+    return NeglectedConvert(
+      convertId: _requiredString(value, 'convertId'),
+      parishId: _requiredString(value, 'parishId'),
+      parishName: _requiredString(value, 'parishName'),
+      convertName: _requiredString(value, 'convertName'),
+      phone: value['phone'] is String ? value['phone'] as String : null,
+      oldestOverdueTaskType: _requiredString(value, 'oldestOverdueTaskType'),
+      oldestOverdueOccurrenceNumber:
+          rawOccurrence is num ? rawOccurrence.toInt() : 0,
+      oldestOverdueDueAt: dueAt,
+      overdueTaskCount: rawCount is num ? rawCount.toInt() : 0,
+      neglectedForMinutes: rawMinutes is num ? rawMinutes.toInt() : 0,
     );
   }
 }

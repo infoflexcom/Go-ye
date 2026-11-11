@@ -728,6 +728,113 @@ describe('ConvertsService', () => {
     ).rejects.toThrow(/not found in actor scope/i);
   });
 
+  it('lists live scoped overdue escalations and de-duplicated neglected converts for supervisors', async () => {
+    const convert = await converts.create(parishActor, {
+      fullName: 'Escalation List Convert',
+      phone: '+234 803 000 0057',
+      consent: { granted: true, version: '2026-11', method: 'DIGITAL' },
+    });
+    const now = new Date();
+    const oldestDue = new Date(now.getTime() - 26 * 60 * 60 * 1000);
+    const newerDue = new Date(now.getTime() - 25 * 60 * 60 * 1000);
+    await testDatabase.pool.query(
+      `UPDATE follow_up_tasks
+       SET status = CASE
+                      WHEN task_type IN ('CALL_24H', 'PRAYER_DAY_3')
+                        THEN 'PENDING'::follow_up_task_status
+                      ELSE 'CANCELLED'::follow_up_task_status
+                    END,
+           due_at = CASE
+                      WHEN task_type = 'CALL_24H' THEN $1
+                      WHEN task_type = 'PRAYER_DAY_3' THEN $2
+                      ELSE due_at
+                    END
+       WHERE convert_id = $3`,
+      [oldestDue, newerDue, convert.id],
+    );
+
+    await expect(followUpTasks.listEscalations(parishActor, {}, now)).rejects.toThrow(
+      /supervision/i,
+    );
+
+    const escalations = await followUpTasks.listEscalations(areaActor, {}, now);
+    const convertEscalations = escalations.items.filter((task) => task.convertId === convert.id);
+    expect(convertEscalations).toEqual([
+      expect.objectContaining({
+        taskType: 'CALL_24H',
+        parishId: units.get('NG-PAR-B')?.id,
+        parishName: 'NG-PAR-B',
+        convertName: 'Escalation List Convert',
+        phone: '+2348030000057',
+        overdueMinutes: 1560,
+      }),
+      expect.objectContaining({
+        taskType: 'PRAYER_DAY_3',
+        overdueMinutes: 1500,
+      }),
+    ]);
+
+    const neglected = await followUpTasks.listNeglected(areaActor, {}, now);
+    const neglectedConvert = neglected.items.find((item) => item.convertId === convert.id);
+    expect(neglectedConvert).toMatchObject({
+      parishId: units.get('NG-PAR-B')?.id,
+      parishName: 'NG-PAR-B',
+      convertName: 'Escalation List Convert',
+      phone: '+2348030000057',
+      oldestOverdueTaskType: 'CALL_24H',
+      oldestOverdueOccurrenceNumber: 1,
+      overdueTaskCount: 2,
+      neglectedForMinutes: 1560,
+    });
+
+    await expect(privacySettings.updatePhoneMasking(globalActor, true)).resolves.toEqual({
+      maskPhoneNumbersAboveParish: true,
+    });
+    const maskedEscalations = await followUpTasks.listEscalations(areaActor, {}, now);
+    expect(maskedEscalations.items.find((item) => item.convertId === convert.id)?.phone).toBe(
+      '***0057',
+    );
+    await expect(privacySettings.updatePhoneMasking(globalActor, false)).resolves.toEqual({
+      maskPhoneNumbersAboveParish: false,
+    });
+
+    const taskIds = convertEscalations.map((task) => task.id);
+    for (const taskId of taskIds) {
+      await followUpTasks.complete(areaActor, taskId, { outcome: 'COMPLETED' });
+    }
+    const remainingEscalations = await followUpTasks.listEscalations(areaActor, {}, now);
+    const remainingNeglected = await followUpTasks.listNeglected(areaActor, {}, now);
+    expect(remainingEscalations.items.some((item) => item.convertId === convert.id)).toBe(false);
+    expect(remainingNeglected.items.some((item) => item.convertId === convert.id)).toBe(false);
+
+    const audit = await testDatabase.pool.query<{
+      action: string;
+      resource_type: string;
+      metadata: Record<string, unknown>;
+    }>(
+      `SELECT action, resource_type, metadata
+       FROM audit_log
+       WHERE actor_user_id = $1
+         AND action IN (
+           'FOLLOW_UP_ESCALATIONS_READ_ABOVE_PARISH',
+           'FOLLOW_UP_NEGLECTED_READ_ABOVE_PARISH'
+         )
+       ORDER BY occurred_at, id`,
+      [areaActor.id],
+    );
+    const escalationAudit = audit.rows.find(
+      (row) => row.action === 'FOLLOW_UP_ESCALATIONS_READ_ABOVE_PARISH',
+    );
+    const neglectedAudit = audit.rows.find(
+      (row) => row.action === 'FOLLOW_UP_NEGLECTED_READ_ABOVE_PARISH',
+    );
+    expect(escalationAudit?.resource_type).toBe('CONVERT');
+    expect(escalationAudit?.metadata['limit']).toBe(50);
+    expect(neglectedAudit?.resource_type).toBe('CONVERT');
+    expect(neglectedAudit?.metadata['neglectThresholdHours']).toBe(24);
+    expect(JSON.stringify(audit.rows)).not.toContain('Escalation List Convert');
+  });
+
   it('encrypts an active Android session FCM token before durable reminder delivery', async () => {
     const device = await testDatabase.pool.query<{ id: string }>(
       `INSERT INTO devices (user_id, device_identifier_hash, platform)

@@ -29,6 +29,18 @@ const followUpWorkerRoles = new Set([
   'FOLLOW_UP_WORKER',
 ]);
 
+// Risk lists are supervisory views. Parish pastors can act on their Parish;
+// leadership roles can act on their descendant parishes. Operational workers
+// retain their Today list but are not given a broader people-management view.
+const followUpSupervisorRoles = new Set([
+  'COUNTRY_ADMIN',
+  'REGION_LEADER',
+  'PROVINCE_LEADER',
+  'ZONE_LEADER',
+  'AREA_LEADER',
+  'PARISH_PASTOR',
+]);
+
 const pushRecipientRoles = ['PARISH_PASTOR', 'SOUL_WINNER', 'FOLLOW_UP_WORKER'];
 
 interface FollowUpTaskRow {
@@ -45,6 +57,24 @@ interface FollowUpTaskRow {
   completed_by: string | null;
   full_name_encrypted: Buffer;
   phone_encrypted: Buffer | null;
+}
+
+interface OverdueFollowUpTaskRow extends FollowUpTaskRow {
+  parish_name: string;
+  total: string;
+}
+
+interface NeglectedConvertRow {
+  convert_id: string;
+  parish_id: string;
+  parish_name: string;
+  full_name_encrypted: Buffer;
+  phone_encrypted: Buffer | null;
+  task_type: FollowUpTaskType;
+  occurrence_number: number;
+  due_at: Date;
+  overdue_task_count: number;
+  total: string;
 }
 
 interface PushDeviceRow {
@@ -66,6 +96,29 @@ export interface FollowUpTask {
   note?: string;
   completedAt?: Date;
   completedBy?: string;
+}
+
+export interface OverdueFollowUpTask extends FollowUpTask {
+  parishName: string;
+  overdueMinutes: number;
+}
+
+export interface NeglectedConvert {
+  convertId: string;
+  parishId: string;
+  parishName: string;
+  convertName: string;
+  phone?: string;
+  oldestOverdueTaskType: FollowUpTaskType;
+  oldestOverdueOccurrenceNumber: number;
+  oldestOverdueDueAt: Date;
+  overdueTaskCount: number;
+  neglectedForMinutes: number;
+}
+
+export interface FollowUpRiskPage<T> {
+  total: number;
+  items: T[];
 }
 
 export interface FollowUpPushRecipientLookup {
@@ -107,6 +160,130 @@ export class FollowUpTasksService {
       });
       const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
       return tasks.rows.map((task) => this.toTask(task, maskPhone));
+    });
+  }
+
+  /**
+   * Lists each active, scoped pending action after its due time. The result is
+   * live rather than scheduler-written, so resolving a task removes it without
+   * a retry race or a second escalation record.
+   */
+  async listEscalations(
+    actor: AuthenticatedActor,
+    options: { offset?: number; limit?: number },
+    now: Date = new Date(),
+  ): Promise<FollowUpRiskPage<OverdueFollowUpTask>> {
+    this.assertFollowUpSupervisor(actor);
+    const { offset, limit } = this.riskPagination(options);
+    return this.withActor(actor, async (client) => {
+      const result = await client.query<OverdueFollowUpTaskRow>(
+        `WITH overdue AS MATERIALIZED (
+           SELECT task.id, task.convert_id, task.parish_id, task.task_type::text,
+                  task.occurrence_number, task.due_at, task.status::text,
+                  task.outcome::text, task.outcome_note_encrypted, task.completed_at,
+                  task.completed_by, convert.full_name_encrypted, convert.phone_encrypted,
+                  parish.name AS parish_name
+           FROM follow_up_tasks task
+           JOIN converts convert ON convert.id = task.convert_id
+           JOIN org_units parish ON parish.id = task.parish_id
+           WHERE task.status = 'PENDING'
+             AND task.due_at < $1
+             AND convert.privacy_status = 'ACTIVE'
+             AND convert.merged_into_id IS NULL
+         )
+         SELECT overdue.*, count(*) OVER ()::text AS total
+         FROM overdue
+         ORDER BY overdue.due_at ASC, overdue.id ASC
+         OFFSET $2 LIMIT $3`,
+        [now, offset, limit],
+      );
+      await this.auditAboveParishRead(client, actor, 'FOLLOW_UP_ESCALATIONS_READ_ABOVE_PARISH', {
+        resourceType: 'CONVERT',
+        metadata: { offset, limit, total: this.pageTotal(result.rows), asOf: now.toISOString() },
+      });
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
+      return {
+        total: this.pageTotal(result.rows),
+        items: result.rows.map((task) => ({
+          ...this.toTask(task, maskPhone),
+          parishName: task.parish_name,
+          overdueMinutes: this.elapsedMinutes(now, task.due_at),
+        })),
+      };
+    });
+  }
+
+  /**
+   * Returns one row per active convert whose oldest pending action has been
+   * overdue for the configured grace period. It deliberately groups the task
+   * backlog so a convert is never counted more than once in the neglected list.
+   */
+  async listNeglected(
+    actor: AuthenticatedActor,
+    options: { offset?: number; limit?: number },
+    now: Date = new Date(),
+  ): Promise<FollowUpRiskPage<NeglectedConvert>> {
+    this.assertFollowUpSupervisor(actor);
+    const { offset, limit } = this.riskPagination(options);
+    const neglectedBefore = new Date(now.getTime() - this.neglectedAfterHours() * 60 * 60 * 1000);
+    return this.withActor(actor, async (client) => {
+      const result = await client.query<NeglectedConvertRow>(
+        `WITH overdue AS MATERIALIZED (
+           SELECT task.convert_id, task.parish_id, parish.name AS parish_name,
+                  convert.full_name_encrypted, convert.phone_encrypted,
+                  task.task_type::text, task.occurrence_number, task.due_at,
+                  row_number() OVER (
+                    PARTITION BY task.convert_id
+                    ORDER BY task.due_at ASC, task.id ASC
+                  ) AS task_rank,
+                  count(*) OVER (PARTITION BY task.convert_id)::integer AS overdue_task_count
+           FROM follow_up_tasks task
+           JOIN converts convert ON convert.id = task.convert_id
+           JOIN org_units parish ON parish.id = task.parish_id
+           WHERE task.status = 'PENDING'
+             AND task.due_at <= $1
+             AND convert.privacy_status = 'ACTIVE'
+             AND convert.merged_into_id IS NULL
+         ), neglected AS (
+           SELECT * FROM overdue WHERE task_rank = 1
+         )
+         SELECT neglected.*, count(*) OVER ()::text AS total
+         FROM neglected
+         ORDER BY neglected.due_at ASC, neglected.convert_id ASC
+         OFFSET $2 LIMIT $3`,
+        [neglectedBefore, offset, limit],
+      );
+      await this.auditAboveParishRead(client, actor, 'FOLLOW_UP_NEGLECTED_READ_ABOVE_PARISH', {
+        resourceType: 'CONVERT',
+        metadata: {
+          offset,
+          limit,
+          total: this.pageTotal(result.rows),
+          asOf: now.toISOString(),
+          neglectThresholdHours: this.neglectedAfterHours(),
+        },
+      });
+      const maskPhone = await this.privacySettings.maskPhoneNumbersAboveParish(client, actor);
+      return {
+        total: this.pageTotal(result.rows),
+        items: result.rows.map((convert) => {
+          const phone = convert.phone_encrypted
+            ? this.encryption.decrypt(convert.phone_encrypted)
+            : undefined;
+          return {
+            convertId: convert.convert_id,
+            parishId: convert.parish_id,
+            parishName: convert.parish_name,
+            convertName: this.encryption.decrypt(convert.full_name_encrypted),
+            ...(phone ? { phone: maskPhone ? maskPhoneNumber(phone) : phone } : {}),
+            oldestOverdueTaskType: convert.task_type,
+            oldestOverdueOccurrenceNumber: convert.occurrence_number,
+            oldestOverdueDueAt: convert.due_at,
+            overdueTaskCount: convert.overdue_task_count,
+            neglectedForMinutes: this.elapsedMinutes(now, convert.due_at),
+          };
+        }),
+      };
     });
   }
 
@@ -288,6 +465,21 @@ export class FollowUpTasksService {
     };
   }
 
+  private riskPagination(options: { offset?: number; limit?: number }): {
+    offset: number;
+    limit: number;
+  } {
+    return { offset: options.offset ?? 0, limit: options.limit ?? 50 };
+  }
+
+  private pageTotal(rows: { total: string }[]): number {
+    return rows[0] ? Number(rows[0].total) : 0;
+  }
+
+  private elapsedMinutes(now: Date, earlier: Date): number {
+    return Math.max(0, Math.floor((now.getTime() - earlier.getTime()) / 60_000));
+  }
+
   private async withActor<T>(
     actor: AuthenticatedActor,
     callback: (client: PoolClient) => Promise<T>,
@@ -316,11 +508,26 @@ export class FollowUpTasksService {
     }
   }
 
+  private assertFollowUpSupervisor(actor: AuthenticatedActor): void {
+    if (actor.isGlobalAdmin) {
+      return;
+    }
+    if (
+      !actor.homeUnitId ||
+      !actor.homePath ||
+      !actor.roles.some((role) => followUpSupervisorRoles.has(role))
+    ) {
+      throw new ForbiddenException(
+        'The active role and home unit do not permit follow-up supervision.',
+      );
+    }
+  }
+
   private async auditAboveParishRead(
     client: PoolClient,
     actor: AuthenticatedActor,
     action: string,
-    details: { metadata: Record<string, unknown> },
+    details: { resourceType?: string; metadata: Record<string, unknown> },
   ): Promise<void> {
     if (!actor.isGlobalAdmin) {
       if (!actor.homeUnitId) {
@@ -337,7 +544,7 @@ export class FollowUpTasksService {
     await this.audit.append(client, {
       actorUserId: actor.id,
       action,
-      resourceType: 'FOLLOW_UP_TASK',
+      resourceType: details.resourceType ?? 'FOLLOW_UP_TASK',
       scopeUnitId: actor.homeUnitId,
       metadata: details.metadata,
     });
@@ -357,6 +564,10 @@ export class FollowUpTasksService {
       throw new Error('AUDIT_CHAIN_SECRET must be configured for follow-up operations.');
     }
     return secret;
+  }
+
+  private neglectedAfterHours(): number {
+    return this.config.get<number>('FOLLOW_UP_NEGLECTED_AFTER_HOURS', 24);
   }
 
   private timeZone(): string {

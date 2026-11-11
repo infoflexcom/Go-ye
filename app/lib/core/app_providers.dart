@@ -72,6 +72,17 @@ final todayFollowUpTasksProvider =
   return ref.watch(followUpRepositoryProvider).listToday();
 });
 
+final followUpEscalationsProvider =
+    FutureProvider.autoDispose<FollowUpRiskPage<OverdueFollowUpTask>>(
+        (Ref ref) {
+  return ref.watch(followUpRepositoryProvider).listEscalations();
+});
+
+final neglectedConvertsProvider =
+    FutureProvider.autoDispose<FollowUpRiskPage<NeglectedConvert>>((Ref ref) {
+  return ref.watch(followUpRepositoryProvider).listNeglected();
+});
+
 final deviceNotificationServiceProvider =
     Provider<DeviceNotificationService>((Ref ref) {
   return DeviceNotificationService();

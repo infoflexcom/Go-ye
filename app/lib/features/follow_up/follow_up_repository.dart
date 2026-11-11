@@ -11,6 +11,34 @@ class FollowUpRepository {
     return response.map(FollowUpTask.fromJson).toList(growable: false);
   }
 
+  Future<FollowUpRiskPage<OverdueFollowUpTask>> listEscalations({
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    final response = await _api.get(
+      'follow-up/escalations',
+      query: <String, String>{'offset': '$offset', 'limit': '$limit'},
+    );
+    return FollowUpRiskPage<OverdueFollowUpTask>.fromJson(
+      response,
+      OverdueFollowUpTask.fromJson,
+    );
+  }
+
+  Future<FollowUpRiskPage<NeglectedConvert>> listNeglected({
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    final response = await _api.get(
+      'follow-up/neglected',
+      query: <String, String>{'offset': '$offset', 'limit': '$limit'},
+    );
+    return FollowUpRiskPage<NeglectedConvert>.fromJson(
+      response,
+      NeglectedConvert.fromJson,
+    );
+  }
+
   Future<FollowUpTask> complete(
     String taskId, {
     required String outcome,

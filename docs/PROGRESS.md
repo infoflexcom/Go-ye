@@ -1,6 +1,6 @@
 # Go-Ye delivery progress
 
-**Last updated:** 2026-11-07 (Africa/Lagos)
+**Last updated:** 2026-11-06 (Africa/Lagos)
 **Active branch:** `arena/9a3f746d-go-ye`
 
 ## Current gate
@@ -13,8 +13,8 @@ Phase 4 continues the same NestJS/PostgreSQL authority boundary. No real convert
 
 - [x] **4.1 Configurable cadence engine:** a Global Admin-managed, auditable database cadence now seeds 24-hour call, Day-3 prayer, Day-7 visit and Day-14 first weekly check-in tasks when a convert enters parish follow-up. Each task is tied to a cadence step and occurrence number, so a unique constraint prevents duplicate first occurrences; changes affect new assignments only. The recurring materialisation job is deliberately deferred to 4.2.
 - [x] **4.2 Idempotent server-side job queue/scheduler:** PostgreSQL materialises the next weekly occurrence only after completion, snapshots its interval, and creates one durable due-reminder job per task. Concurrent scheduler runs, claims, retry leases and a deterministic key are database-idempotent; notification delivery remains 4.3.
-- [ ] **4.3 Today list, outcomes/notes and Android/Windows notifications:** implementation is awaiting Flutter/Windows CI validation. It includes scoped Today and encrypted one-tap completion outcomes, FCM device registration/durable delivery and Windows local toast sync; real-device notification evidence remains required by the Phase 4 gate ([runbook](PHASE_4_NOTIFICATION_ACCEPTANCE.md)).
-- [ ] **4.4 Overdue escalation and Neglected Converts lists**
+- [ ] **4.3 Today list, outcomes/notes and Android/Windows notifications:** automated Flutter quality, Android debug/emulator integration and Windows integration routes passed in CI run `42641971370`. It includes scoped Today and encrypted one-tap completion outcomes, FCM device registration/durable delivery and Windows local toast sync; real-device notification evidence remains required by the Phase 4 gate ([runbook](PHASE_4_NOTIFICATION_ACCEPTANCE.md)).
+- [x] **4.4 Overdue escalation and Neglected Converts lists:** supervisors now receive server-scoped, oldest-first live escalations as soon as an active pending task passes its due time, plus one de-duplicated neglected-convert row once the oldest action has exceeded the configurable 24-hour safe-default grace period. Global Admin, hierarchy leadership and Parish Pastors only; RLS, above-Parish audit and runtime phone masking remain enforced. A supervisor may resolve an escalation through the existing outcome flow, which immediately removes it from both risk views. Versioned migration `0019` adds the supporting pending-due index and its rollback; PostgreSQL/service, Flutter widget and full CI routes passed in run `43004663617`.
 - [ ] **4.5 Baptism and planting journey completion tracking**
 - [ ] **4.6 Simulated 30-day timeline test**
 

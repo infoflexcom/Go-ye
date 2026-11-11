@@ -110,7 +110,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       _WorkspaceDestination.dashboard => _DashboardWelcome(
           session: widget.session,
         ),
-      _WorkspaceDestination.today => const TodayFollowUpScreen(),
+      _WorkspaceDestination.today => TodayFollowUpScreen(
+          showSupervisionLists: _canFollowUpSupervision(widget.session),
+        ),
       _WorkspaceDestination.newDecision => NewDecisionScreen(
           isGlobalAdmin: widget.session.isGlobalAdmin,
         ),
@@ -264,6 +266,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       'FOLLOW_UP_WORKER',
     };
     return session.isGlobalAdmin || session.roles.any(followUpRoles.contains);
+  }
+
+  bool _canFollowUpSupervision(Session session) {
+    const supervisorRoles = <String>{
+      'COUNTRY_ADMIN',
+      'REGION_LEADER',
+      'PROVINCE_LEADER',
+      'ZONE_LEADER',
+      'AREA_LEADER',
+      'PARISH_PASTOR',
+    };
+    return session.isGlobalAdmin || session.roles.any(supervisorRoles.contains);
   }
 
   bool _canRegisterConverts(Session session) {
